@@ -32,8 +32,10 @@ echo "🔌 Connecting to server..."
 echo ""
 
 # SSH and run deployment commands
-ssh ${USERNAME}@${SERVER_IP} << 'ENDSSH'
+ssh ${USERNAME}@${SERVER_IP} bash << 'ENDSSH'
 #!/bin/bash
+
+export REPO_URL="https://github.com/nishkarshk212/God-Vc-Music-Bot.git"
 
 echo "📦 Step 1: Updating system..."
 apt update && apt upgrade -y
@@ -47,7 +49,7 @@ mkdir -p GodVCMusicBot
 cd GodVCMusicBot
 
 echo "📥 Step 4: Cloning repository..."
-git clone $REPO_URL . || { echo "❌ Git clone failed"; exit 1; }
+git clone "$REPO_URL" . || { echo "❌ Git clone failed"; exit 1; }
 
 echo "🌐 Step 5: Creating virtual environment..."
 python3 -m venv venv

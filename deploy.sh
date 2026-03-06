@@ -32,7 +32,7 @@ mkdir -p $BOT_DIR
 cd $BOT_DIR
 
 echo -e "${YELLOW}📥 Step 5: Cloning repository...${NC}"
-git clone $REPO_URL .
+git clone "$REPO_URL" .
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✅ Repository cloned successfully!${NC}"
 else
