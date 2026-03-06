@@ -1,12 +1,32 @@
 import yt_dlp
+import os
 
-def search_youtube(query):
-    ydl_opts = {
+def get_ydl_opts():
+    """Get yt-dlp options with cookie support"""
+    opts = {
         "format": "bestaudio/best",
         "quiet": True,
         "no_warnings": True,
         "extractor_args": {"youtube": {"player_client": ["ios"]}}
     }
+    
+    # Check for cookies file
+    cookie_paths = [
+        "youtube_cookies.txt",
+        "GodVCMusicBot/youtube_cookies.txt",
+        os.path.join(os.path.dirname(__file__), "youtube_cookies.txt")
+    ]
+    
+    for cookie_path in cookie_paths:
+        if os.path.exists(cookie_path):
+            opts["cookiefile"] = cookie_path
+            print(f"✅ Using cookies from: {cookie_path}")
+            break
+    
+    return opts
+
+def search_youtube(query):
+    ydl_opts = get_ydl_opts()
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         result = ydl.extract_info(f"ytsearch:{query}", download=False)["entries"][0]
     return {
@@ -18,12 +38,7 @@ def search_youtube(query):
     }
 
 def search_youtube_video(query):
-    ydl_opts = {
-        "format": "bestvideo+bestaudio/best",
-        "quiet": True,
-        "no_warnings": True,
-        "extractor_args": {"youtube": {"player_client": ["ios"]}}
-    }
+    ydl_opts = get_ydl_opts()
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         result = ydl.extract_info(f"ytsearch:{query}", download=False)["entries"][0]
     return {
@@ -35,12 +50,7 @@ def search_youtube_video(query):
     }
 
 def resolve_stream(webpage_url):
-    ydl_opts = {
-        "format": "bestaudio/best",
-        "quiet": True,
-        "no_warnings": True,
-        "extractor_args": {"youtube": {"player_client": ["ios"]}}
-    }
+    ydl_opts = get_ydl_opts()
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(webpage_url, download=False)
         return info.get("url")
