@@ -1,7 +1,12 @@
 import yt_dlp
 
 def search_youtube(query):
-    ydl_opts = {"format": "bestaudio/best", "quiet": True}
+    ydl_opts = {
+        "format": "bestaudio/best",
+        "quiet": True,
+        "no_warnings": True,
+        "extractor_args": {"youtube": {"player_client": ["ios"]}}
+    }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         result = ydl.extract_info(f"ytsearch:{query}", download=False)["entries"][0]
     return {
@@ -13,7 +18,12 @@ def search_youtube(query):
     }
 
 def search_youtube_video(query):
-    ydl_opts = {"format": "bestvideo+bestaudio/best", "quiet": True}
+    ydl_opts = {
+        "format": "bestvideo+bestaudio/best",
+        "quiet": True,
+        "no_warnings": True,
+        "extractor_args": {"youtube": {"player_client": ["ios"]}}
+    }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         result = ydl.extract_info(f"ytsearch:{query}", download=False)["entries"][0]
     return {
@@ -25,7 +35,12 @@ def search_youtube_video(query):
     }
 
 def resolve_stream(webpage_url):
-    ydl_opts = {"format": "bestaudio/best", "quiet": True}
+    ydl_opts = {
+        "format": "bestaudio/best",
+        "quiet": True,
+        "no_warnings": True,
+        "extractor_args": {"youtube": {"player_client": ["ios"]}}
+    }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(webpage_url, download=False)
         return info.get("url")
