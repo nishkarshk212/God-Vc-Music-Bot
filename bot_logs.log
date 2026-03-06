@@ -1,0 +1,199 @@
+2026-03-06 18:43:53,176 - hydrogram.connection.connection - INFO - Connecting...
+2026-03-06 18:43:53,289 - hydrogram.connection.connection - INFO - Connected! Production DC5 - IPv4
+2026-03-06 18:43:53,290 - hydrogram.session.session - INFO - NetworkTask started
+2026-03-06 18:43:53,920 - hydrogram.session.session - INFO - Session initialized: Layer 181
+2026-03-06 18:43:53,922 - hydrogram.session.session - INFO - Device: CPython 3.11.9 - Hydrogram 0.2.0
+2026-03-06 18:43:53,922 - hydrogram.session.session - INFO - System: Darwin 25.3.0 (en)
+2026-03-06 18:43:53,922 - hydrogram.session.session - INFO - Session started
+2026-03-06 18:43:53,922 - hydrogram.session.session - INFO - PingTask started
+2026-03-06 18:43:54,190 - hydrogram.dispatcher - INFO - Started 12 HandlerTasks
+2026-03-06 18:43:54,195 - root - ERROR - Startup error: Client has not been started yet
+2026-03-06 18:44:41,530 - hydrogram.connection.connection - INFO - Connecting...
+2026-03-06 18:44:41,624 - hydrogram.connection.connection - INFO - Connected! Production DC5 - IPv4
+2026-03-06 18:44:41,624 - hydrogram.session.session - INFO - NetworkTask started
+2026-03-06 18:44:42,165 - hydrogram.session.session - INFO - Session initialized: Layer 181
+2026-03-06 18:44:42,166 - hydrogram.session.session - INFO - Device: CPython 3.11.9 - Hydrogram 0.2.0
+2026-03-06 18:44:42,166 - hydrogram.session.session - INFO - System: Darwin 25.3.0 (en)
+2026-03-06 18:44:42,166 - hydrogram.session.session - INFO - Session started
+2026-03-06 18:44:42,167 - hydrogram.session.session - INFO - PingTask started
+2026-03-06 18:44:42,428 - hydrogram.dispatcher - INFO - Started 12 HandlerTasks
+2026-03-06 18:44:42,920 - hydrogram.connection.connection - INFO - Connecting...
+2026-03-06 18:44:43,024 - hydrogram.connection.connection - INFO - Connected! Production DC5 - IPv4
+2026-03-06 18:44:43,025 - hydrogram.session.session - INFO - NetworkTask started
+2026-03-06 18:44:43,564 - hydrogram.session.session - INFO - Session initialized: Layer 181
+2026-03-06 18:44:43,565 - hydrogram.session.session - INFO - Device: CPython 3.11.9 - Hydrogram 0.2.0
+2026-03-06 18:44:43,565 - hydrogram.session.session - INFO - System: Darwin 25.3.0 (en)
+2026-03-06 18:44:43,565 - hydrogram.session.session - INFO - Session started
+2026-03-06 18:44:43,565 - hydrogram.session.session - INFO - PingTask started
+2026-03-06 18:44:43,977 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('play') in group 0 from 'GodVCMusicBot.plugins.play'
+2026-03-06 18:44:43,977 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] CallbackQueryHandler('controls') in group 0 from 'GodVCMusicBot.plugins.player_controls'
+2026-03-06 18:44:43,978 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('show_queue') in group 0 from 'GodVCMusicBot.plugins.queue_cmd'
+2026-03-06 18:44:43,980 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('skip_cmd') in group 0 from 'GodVCMusicBot.plugins.skip'
+2026-03-06 18:44:43,980 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('start') in group 0 from 'GodVCMusicBot.plugins.start'
+2026-03-06 18:44:43,980 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] CallbackQueryHandler('start_callbacks') in group 0 from 'GodVCMusicBot.plugins.start'
+2026-03-06 18:44:43,980 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('stop_cmd') in group 0 from 'GodVCMusicBot.plugins.stop'
+2026-03-06 18:44:43,982 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('vplay') in group 0 from 'GodVCMusicBot.plugins.vplay'
+2026-03-06 18:44:43,982 - hydrogram.client - INFO - [GodVCMusicBot] Successfully loaded 8 plugins from 'GodVCMusicBot/plugins'
+2026-03-06 18:44:43,982 - hydrogram.dispatcher - INFO - Started 12 HandlerTasks
+2026-03-06 18:44:44,278 - utils.bot_logger - INFO - Log sent to @worldwide_friends_chatting_zones: 
+✅ **Bot Started Successfully**
+
+🤖 Bot Name: ˹ʟɪʟʏ ꭙ ᴍᴜsɪᴄ˼ ♪
+🆔 Bot ID: `8775908280`
+📛 Username: @Lilyy_music_bot
+⏰ Startup Time: 2026-03-06 18:44:44
+
+2026-03-06 18:44:44,550 - utils.bot_logger - ERROR - Failed to send log to @log_x_bott: Telegram says: [403 CHAT_WRITE_FORBIDDEN] - You don't have rights to send messages in this chat (caused by "messages.SendMessage")
+2026-03-06 18:45:56,006 - hydrogram.connection.connection - INFO - Connecting...
+2026-03-06 18:45:56,154 - hydrogram.connection.connection - INFO - Connected! Production DC5 - IPv4
+2026-03-06 18:45:56,154 - hydrogram.session.session - INFO - NetworkTask started
+2026-03-06 18:45:56,601 - hydrogram.session.session - INFO - Session initialized: Layer 181
+2026-03-06 18:45:56,603 - hydrogram.session.session - INFO - Device: CPython 3.11.9 - Hydrogram 0.2.0
+2026-03-06 18:45:56,603 - hydrogram.session.session - INFO - System: Darwin 25.3.0 (en)
+2026-03-06 18:45:56,603 - hydrogram.session.session - INFO - Session started
+2026-03-06 18:45:56,603 - hydrogram.session.session - INFO - PingTask started
+2026-03-06 18:45:56,884 - hydrogram.dispatcher - INFO - Started 12 HandlerTasks
+2026-03-06 18:45:57,722 - hydrogram.connection.connection - INFO - Connecting...
+2026-03-06 18:45:57,823 - hydrogram.connection.connection - INFO - Connected! Production DC5 - IPv4
+2026-03-06 18:45:57,824 - hydrogram.session.session - INFO - NetworkTask started
+2026-03-06 18:45:58,339 - hydrogram.session.session - INFO - Session initialized: Layer 181
+2026-03-06 18:45:58,340 - hydrogram.session.session - INFO - Device: CPython 3.11.9 - Hydrogram 0.2.0
+2026-03-06 18:45:58,340 - hydrogram.session.session - INFO - System: Darwin 25.3.0 (en)
+2026-03-06 18:45:58,340 - hydrogram.session.session - INFO - Session started
+2026-03-06 18:45:58,340 - hydrogram.session.session - INFO - PingTask started
+2026-03-06 18:45:58,796 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('play') in group 0 from 'GodVCMusicBot.plugins.play'
+2026-03-06 18:45:58,797 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] CallbackQueryHandler('controls') in group 0 from 'GodVCMusicBot.plugins.player_controls'
+2026-03-06 18:45:58,797 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('show_queue') in group 0 from 'GodVCMusicBot.plugins.queue_cmd'
+2026-03-06 18:45:58,797 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('skip_cmd') in group 0 from 'GodVCMusicBot.plugins.skip'
+2026-03-06 18:45:58,797 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('start') in group 0 from 'GodVCMusicBot.plugins.start'
+2026-03-06 18:45:58,797 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] CallbackQueryHandler('start_callbacks') in group 0 from 'GodVCMusicBot.plugins.start'
+2026-03-06 18:45:58,798 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('stop_cmd') in group 0 from 'GodVCMusicBot.plugins.stop'
+2026-03-06 18:45:58,798 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('vplay') in group 0 from 'GodVCMusicBot.plugins.vplay'
+2026-03-06 18:45:58,798 - hydrogram.client - INFO - [GodVCMusicBot] Successfully loaded 8 plugins from 'GodVCMusicBot/plugins'
+2026-03-06 18:45:58,798 - hydrogram.dispatcher - INFO - Started 12 HandlerTasks
+2026-03-06 18:45:59,152 - utils.bot_logger - INFO - Log sent to @worldwide_friends_chatting_zones: 
+✅ **Bot Started Successfully**
+
+🤖 Bot Name: ˹ʟɪʟʏ ꭙ ᴍᴜsɪᴄ˼ ♪
+🆔 Bot ID: `8775908280`
+📛 Username: @Lilyy_music_bot
+⏰ Startup Time: 2026-03-06 18:45:58
+
+2026-03-06 18:45:59,281 - utils.bot_logger - ERROR - Failed to send log to @log_x_bott: Telegram says: [403 CHAT_WRITE_FORBIDDEN] - You don't have rights to send messages in this chat (caused by "messages.SendMessage")
+2026-03-06 18:47:32,733 - hydrogram.connection.connection - INFO - Connecting...
+2026-03-06 18:47:32,824 - hydrogram.connection.connection - INFO - Connected! Production DC5 - IPv4
+2026-03-06 18:47:32,825 - hydrogram.session.session - INFO - NetworkTask started
+2026-03-06 18:47:33,276 - hydrogram.session.session - INFO - Session initialized: Layer 181
+2026-03-06 18:47:33,277 - hydrogram.session.session - INFO - Device: CPython 3.11.9 - Hydrogram 0.2.0
+2026-03-06 18:47:33,277 - hydrogram.session.session - INFO - System: Darwin 25.3.0 (en)
+2026-03-06 18:47:33,277 - hydrogram.session.session - INFO - Session started
+2026-03-06 18:47:33,278 - hydrogram.session.session - INFO - PingTask started
+2026-03-06 18:47:33,542 - hydrogram.dispatcher - INFO - Started 12 HandlerTasks
+2026-03-06 18:47:34,591 - hydrogram.connection.connection - INFO - Connecting...
+2026-03-06 18:47:34,697 - hydrogram.connection.connection - INFO - Connected! Production DC5 - IPv4
+2026-03-06 18:47:34,698 - hydrogram.session.session - INFO - NetworkTask started
+2026-03-06 18:47:35,229 - hydrogram.session.session - INFO - Session initialized: Layer 181
+2026-03-06 18:47:35,230 - hydrogram.session.session - INFO - Device: CPython 3.11.9 - Hydrogram 0.2.0
+2026-03-06 18:47:35,230 - hydrogram.session.session - INFO - System: Darwin 25.3.0 (en)
+2026-03-06 18:47:35,230 - hydrogram.session.session - INFO - Session started
+2026-03-06 18:47:35,230 - hydrogram.session.session - INFO - PingTask started
+2026-03-06 18:47:35,738 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('play') in group 0 from 'GodVCMusicBot.plugins.play'
+2026-03-06 18:47:35,738 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] CallbackQueryHandler('controls') in group 0 from 'GodVCMusicBot.plugins.player_controls'
+2026-03-06 18:47:35,739 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('show_queue') in group 0 from 'GodVCMusicBot.plugins.queue_cmd'
+2026-03-06 18:47:35,739 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('skip_cmd') in group 0 from 'GodVCMusicBot.plugins.skip'
+2026-03-06 18:47:35,739 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('start') in group 0 from 'GodVCMusicBot.plugins.start'
+2026-03-06 18:47:35,740 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] CallbackQueryHandler('start_callbacks') in group 0 from 'GodVCMusicBot.plugins.start'
+2026-03-06 18:47:35,740 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('stop_cmd') in group 0 from 'GodVCMusicBot.plugins.stop'
+2026-03-06 18:47:35,741 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('vplay') in group 0 from 'GodVCMusicBot.plugins.vplay'
+2026-03-06 18:47:35,741 - hydrogram.client - INFO - [GodVCMusicBot] Successfully loaded 8 plugins from 'GodVCMusicBot/plugins'
+2026-03-06 18:47:35,742 - hydrogram.dispatcher - INFO - Started 12 HandlerTasks
+2026-03-06 18:47:36,214 - utils.bot_logger - INFO - Log sent to @worldwide_friends_chatting_zones: 
+✅ **Bot Started Successfully**
+
+🤖 Bot Name: ˹ʟɪʟʏ ꭙ ᴍᴜsɪᴄ˼ ♪
+🆔 Bot ID: `8775908280`
+📛 Username: @Lilyy_music_bot
+⏰ Startup Time: 2026-03-06 18:47:36
+
+2026-03-06 18:47:36,370 - utils.bot_logger - ERROR - Failed to send log to @log_x_bott: Telegram says: [403 CHAT_WRITE_FORBIDDEN] - You don't have rights to send messages in this chat (caused by "messages.SendMessage")
+2026-03-06 18:50:59,576 - hydrogram.connection.connection - INFO - Connecting...
+2026-03-06 18:51:09,578 - hydrogram.connection.connection - WARNING - Unable to connect due to network issues: Connection timed out
+2026-03-06 18:51:10,582 - hydrogram.connection.connection - INFO - Connecting...
+2026-03-06 18:51:20,583 - hydrogram.connection.connection - WARNING - Unable to connect due to network issues: Connection timed out
+2026-03-06 18:51:21,585 - hydrogram.connection.connection - INFO - Connecting...
+2026-03-06 18:51:31,593 - hydrogram.connection.connection - WARNING - Unable to connect due to network issues: Connection timed out
+2026-03-06 18:51:32,595 - hydrogram.connection.connection - WARNING - Connection failed! Trying again...
+2026-03-06 18:51:32,596 - hydrogram.connection.connection - INFO - Disconnected
+2026-03-06 18:51:32,596 - hydrogram.session.session - INFO - Session stopped
+2026-03-06 18:51:32,597 - hydrogram.connection.connection - INFO - Connecting...
+2026-03-06 18:51:42,598 - hydrogram.connection.connection - WARNING - Unable to connect due to network issues: Connection timed out
+2026-03-06 18:51:43,600 - hydrogram.connection.connection - INFO - Connecting...
+2026-03-06 18:51:53,353 - hydrogram.connection.connection - INFO - Connected! Production DC5 - IPv4
+2026-03-06 18:51:53,355 - hydrogram.session.session - INFO - NetworkTask started
+2026-03-06 18:51:54,048 - hydrogram.session.session - INFO - Session initialized: Layer 181
+2026-03-06 18:51:54,049 - hydrogram.session.session - INFO - Device: CPython 3.11.9 - Hydrogram 0.2.0
+2026-03-06 18:51:54,049 - hydrogram.session.session - INFO - System: Darwin 25.3.0 (en)
+2026-03-06 18:51:54,049 - hydrogram.session.session - INFO - Session started
+2026-03-06 18:51:54,049 - hydrogram.session.session - INFO - PingTask started
+2026-03-06 18:51:54,326 - hydrogram.dispatcher - INFO - Started 12 HandlerTasks
+2026-03-06 18:51:55,419 - hydrogram.connection.connection - INFO - Connecting...
+2026-03-06 18:51:55,535 - hydrogram.connection.connection - INFO - Connected! Production DC5 - IPv4
+2026-03-06 18:51:55,536 - hydrogram.session.session - INFO - NetworkTask started
+2026-03-06 18:51:56,028 - hydrogram.session.session - INFO - Session initialized: Layer 181
+2026-03-06 18:51:56,028 - hydrogram.session.session - INFO - Device: CPython 3.11.9 - Hydrogram 0.2.0
+2026-03-06 18:51:56,028 - hydrogram.session.session - INFO - System: Darwin 25.3.0 (en)
+2026-03-06 18:51:56,028 - hydrogram.session.session - INFO - Session started
+2026-03-06 18:51:56,028 - hydrogram.session.session - INFO - PingTask started
+2026-03-06 18:51:56,439 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('play') in group 0 from 'GodVCMusicBot.plugins.play'
+2026-03-06 18:51:56,440 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] CallbackQueryHandler('controls') in group 0 from 'GodVCMusicBot.plugins.player_controls'
+2026-03-06 18:51:56,440 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('show_queue') in group 0 from 'GodVCMusicBot.plugins.queue_cmd'
+2026-03-06 18:51:56,440 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('skip_cmd') in group 0 from 'GodVCMusicBot.plugins.skip'
+2026-03-06 18:51:56,441 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('start') in group 0 from 'GodVCMusicBot.plugins.start'
+2026-03-06 18:51:56,441 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] CallbackQueryHandler('start_callbacks') in group 0 from 'GodVCMusicBot.plugins.start'
+2026-03-06 18:51:56,441 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('stop_cmd') in group 0 from 'GodVCMusicBot.plugins.stop'
+2026-03-06 18:51:56,441 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('vplay') in group 0 from 'GodVCMusicBot.plugins.vplay'
+2026-03-06 18:51:56,441 - hydrogram.client - INFO - [GodVCMusicBot] Successfully loaded 8 plugins from 'GodVCMusicBot/plugins'
+2026-03-06 18:51:56,441 - hydrogram.dispatcher - INFO - Started 12 HandlerTasks
+2026-03-06 18:51:56,579 - utils.bot_logger - INFO - 
+✅ **Bot Started Successfully**
+
+🤖 Bot Name: ˹ʟɪʟʏ ꭙ ᴍᴜsɪᴄ˼ ♪
+🆔 Bot ID: `8775908280`
+📛 Username: @Lilyy_music_bot
+⏰ Startup Time: 2026-03-06 18:51:56
+
+2026-03-06 18:54:01,870 - hydrogram.connection.connection - INFO - Connecting...
+2026-03-06 18:54:01,997 - hydrogram.connection.connection - INFO - Connected! Production DC5 - IPv4
+2026-03-06 18:54:01,997 - hydrogram.session.session - INFO - NetworkTask started
+2026-03-06 18:54:02,541 - hydrogram.session.session - INFO - Session initialized: Layer 181
+2026-03-06 18:54:02,541 - hydrogram.session.session - INFO - Device: CPython 3.11.9 - Hydrogram 0.2.0
+2026-03-06 18:54:02,541 - hydrogram.session.session - INFO - System: Darwin 25.3.0 (en)
+2026-03-06 18:54:02,542 - hydrogram.session.session - INFO - Session started
+2026-03-06 18:54:02,542 - hydrogram.session.session - INFO - PingTask started
+2026-03-06 18:54:02,838 - hydrogram.dispatcher - INFO - Started 12 HandlerTasks
+2026-03-06 18:54:03,613 - hydrogram.connection.connection - INFO - Connecting...
+2026-03-06 18:54:03,715 - hydrogram.connection.connection - INFO - Connected! Production DC5 - IPv4
+2026-03-06 18:54:03,716 - hydrogram.session.session - INFO - NetworkTask started
+2026-03-06 18:54:04,423 - hydrogram.session.session - INFO - Session initialized: Layer 181
+2026-03-06 18:54:04,424 - hydrogram.session.session - INFO - Device: CPython 3.11.9 - Hydrogram 0.2.0
+2026-03-06 18:54:04,424 - hydrogram.session.session - INFO - System: Darwin 25.3.0 (en)
+2026-03-06 18:54:04,424 - hydrogram.session.session - INFO - Session started
+2026-03-06 18:54:04,424 - hydrogram.session.session - INFO - PingTask started
+2026-03-06 18:54:04,896 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('play') in group 0 from 'GodVCMusicBot.plugins.play'
+2026-03-06 18:54:04,896 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] CallbackQueryHandler('controls') in group 0 from 'GodVCMusicBot.plugins.player_controls'
+2026-03-06 18:54:04,897 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('show_queue') in group 0 from 'GodVCMusicBot.plugins.queue_cmd'
+2026-03-06 18:54:04,897 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('skip_cmd') in group 0 from 'GodVCMusicBot.plugins.skip'
+2026-03-06 18:54:04,897 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('start') in group 0 from 'GodVCMusicBot.plugins.start'
+2026-03-06 18:54:04,897 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] CallbackQueryHandler('start_callbacks') in group 0 from 'GodVCMusicBot.plugins.start'
+2026-03-06 18:54:04,898 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('stop_cmd') in group 0 from 'GodVCMusicBot.plugins.stop'
+2026-03-06 18:54:04,898 - hydrogram.client - INFO - [GodVCMusicBot] [LOAD] MessageHandler('vplay') in group 0 from 'GodVCMusicBot.plugins.vplay'
+2026-03-06 18:54:04,898 - hydrogram.client - INFO - [GodVCMusicBot] Successfully loaded 8 plugins from 'GodVCMusicBot/plugins'
+2026-03-06 18:54:04,898 - hydrogram.dispatcher - INFO - Started 12 HandlerTasks
+2026-03-06 18:54:05,037 - utils.bot_logger - INFO - 
+✅ **Bot Started Successfully**
+
+🤖 Bot Name: ˹ʟɪʟʏ ꭙ ᴍᴜsɪᴄ˼ ♪
+🆔 Bot ID: `8775908280`
+📛 Username: @Lilyy_music_bot
+⏰ Startup Time: 2026-03-06 18:54:05
+

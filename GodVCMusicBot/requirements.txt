@@ -1,0 +1,9 @@
+tgcrypto
+py-tgcalls
+aiogram>=3.0.0
+yt-dlp
+pillow
+requests
+aiohttp
+ffmpeg-python
+python-dotenv
