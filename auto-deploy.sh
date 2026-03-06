@@ -57,7 +57,9 @@ source venv/bin/activate
 
 echo "📦 Step 6: Installing Python packages..."
 pip install --upgrade pip
+cd GodVCMusicBot || { echo "❌ Cannot find GodVCMusicBot directory"; exit 1; }
 pip install -r requirements.txt || { echo "❌ Pip install failed"; exit 1; }
+cd ..
 
 echo "⚙️ Step 7: Creating .env file..."
 cat > .env << EOF
@@ -104,8 +106,8 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/root/GodVCMusicBot
-ExecStart=/root/GodVCMusicBot/venv/bin/python3 /root/GodVCMusicBot/GodVCMusicBot/bot.py
+WorkingDirectory=/root/GodVCMusicBot/GodVCMusicBot
+ExecStart=/root/GodVCMusicBot/venv/bin/python3 -m GodVCMusicBot.bot
 Restart=always
 RestartSec=10
 StandardOutput=journal
