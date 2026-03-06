@@ -2,7 +2,6 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from config import API_ID, API_HASH, BOT_TOKEN, LOG_CHANNEL_ID
-from assistant import assistant, call_py
 import asyncio
 from pathlib import Path
 import sys
@@ -23,10 +22,6 @@ dp = Dispatcher()
 # Setup logging to send to Telegram channel
 from utils.logger import setup_logging
 setup_logging(bot)
-
-# Initialize auto-maintenance system
-from utils.auto_maintenance import init_maintenance, start_maintenance
-maintenance_instance = init_maintenance(bot)
 
 print("📦 Loading plugins...")
 # Import all plugin handlers
@@ -51,6 +46,9 @@ if __name__ == "__main__":
         """Called when bot starts"""
         print("\n🔄 Starting bot components...")
         
+        # Import assistant here (after event loop is created)
+        from assistant import assistant, call_py
+        
         # Start assistant and PyTgCalls FIRST (before aiogram polling)
         print("📞 Starting assistant...")
         await assistant.start()
@@ -59,6 +57,10 @@ if __name__ == "__main__":
         print("🎵 Starting PyTgCalls...")
         await call_py.start()
         print("✅ PyTgCalls started")
+        
+        # Initialize auto-maintenance system
+        from utils.auto_maintenance import init_maintenance, start_maintenance
+        maintenance_instance = init_maintenance(bot)
         
         bot_info = await bot.get_me()
         print(f"\n{'='*50}")
@@ -77,9 +79,14 @@ if __name__ == "__main__":
     async def on_shutdown(dispatcher):
         """Called when bot stops"""
         print("\n🔄 Stopping bot...")
+        from assistant import assistant, call_py
+        
         await bot.session.close()
-        await assistant.stop()
-        call_py.stop()
+        try:
+            await assistant.stop()
+            call_py.stop()
+        except:
+            pass
         print("✅ Bot stopped cleanly")
     
     # Register startup/shutdown handlers
@@ -122,6 +129,8 @@ if __name__ == "__main__":
                     pass
                 
                 # Perform crash recovery
+                from utils.auto_maintenance import init_maintenance
+                maintenance_instance = init_maintenance(bot)
                 if maintenance_instance:
                     await maintenance_instance.crash_recovery(e)
                 
