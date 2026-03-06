@@ -10,11 +10,17 @@ def get_ydl_opts():
         "extractor_args": {"youtube": {"player_client": ["ios"]}}
     }
     
-    # Check for cookies file
+    # Check for cookies file in multiple locations (including absolute paths)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    home_dir = os.path.expanduser("~")
+    
     cookie_paths = [
+        os.path.join(script_dir, "youtube_cookies.txt"),
+        os.path.join(home_dir, "GodVCMusicBot", "GodVCMusicBot", "youtube_cookies.txt"),
+        os.path.join(home_dir, "GodVCMusicBot", "youtube_cookies.txt"),
+        "/root/GodVCMusicBot/GodVCMusicBot/youtube_cookies.txt",
         "youtube_cookies.txt",
-        "GodVCMusicBot/youtube_cookies.txt",
-        os.path.join(os.path.dirname(__file__), "youtube_cookies.txt")
+        "GodVCMusicBot/youtube_cookies.txt"
     ]
     
     for cookie_path in cookie_paths:
