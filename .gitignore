@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Session files (should not be committed)
+*.session
+*.session-shm
+*.session-wal
+*.session-journal
+
+# Environment variables
+.env
+
+# Logs
+*.log
+bot_logs.log
+
+# Thumbnails and temporary files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+final_thumb.png
+
+# Downloads
+downloads/
+cache/
+
+# OS
+.DS_Store
+Thumbs.db
