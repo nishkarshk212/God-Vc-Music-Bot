@@ -1,3 +1,4 @@
+hydrogram
 tgcrypto
 py-tgcalls
 aiogram>=3.0.0
