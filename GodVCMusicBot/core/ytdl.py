@@ -1,6 +1,7 @@
 import yt_dlp
 import os
 import random
+import urllib.parse
 
 # List of Invidious instances (alternative YouTube frontends)
 INVIDIOUS_INSTANCES = [
@@ -9,6 +10,16 @@ INVIDIOUS_INSTANCES = [
     "https://yewtu.be",
     "https://inv.riverside.rocks",
     "https://invidious.blamefran.net",
+    "https://vid.puffyan.us",
+    "https://invidious.privacydev.net",
+    "https://inv.tux.pizza",
+]
+
+# List of Piped instances (another alternative frontend)
+PIPED_INSTANCES = [
+    "https://pipedapi.kavin.rocks",
+    "https://pipedapi.adminforge.de",
+    "https://pipedapi.in.projectsegfau.lt",
 ]
 
 def get_ydl_opts(proxy=None, use_invidious=None, clients=None):
@@ -48,11 +59,49 @@ def get_ydl_opts(proxy=None, use_invidious=None, clients=None):
     return opts
 
 def search_youtube(query):
-    """Search YouTube using Invidious + Android client fallback"""
+    """Search YouTube using Piped + Invidious + client fallback"""
     
     print(f"\n🔍 Searching for: {query}")
     
-    # Strategy 1: Try ALL Invidious instances first (most reliable)
+    # Strategy 1: Try Piped instances (most reliable currently)
+    for instance in PIPED_INSTANCES:
+        try:
+            print(f"  → Attempt: Piped ({instance})")
+            import urllib.request
+            import json
+            
+            # Search via Piped API
+            url = f"{instance}/search?q={urllib.parse.quote(query)}&filter=videos"
+            req = urllib.request.Request(url, headers={'Accept': 'application/json'})
+            with urllib.request.urlopen(req, timeout=10) as response:
+                data = json.loads(response.read().decode())
+            
+            if data.get('items') and len(data['items']) > 0:
+                video_id = data['items'][0].get('url', '').replace('/watch?v=', '')
+                title = data['items'][0].get('title', 'Unknown')
+                
+                if video_id:
+                    webpage_url = f"https://www.youtube.com/watch?v={video_id}"
+                    print(f"  ✅ Success via Piped!")
+                    
+                    # Now get the stream URL using yt-dlp with Android client
+                    opts = get_ydl_opts(clients=["android"])
+                    with yt_dlp.YoutubeDL(opts) as ydl:
+                        stream_info = ydl.extract_info(webpage_url, download=False)
+                        direct_url = stream_info.get("url")
+                    
+                    return {
+                        "title": title,
+                        "url": direct_url,
+                        "thumbnail": data['items'][0].get('thumbnail', ''),
+                        "webpage_url": webpage_url,
+                        "duration": data['items'][0].get('duration', 0),
+                    }
+        except Exception as e:
+            print(f"  ❌ Piped failed: {str(e)[:50]}")
+            continue
+    
+    # Strategy 2: Try ALL Invidious instances
     shuffled_instances = INVIDIOUS_INSTANCES.copy()
     random.shuffle(shuffled_instances)
     
@@ -85,79 +134,41 @@ def search_youtube(query):
         except Exception as e:
             error_msg = str(e)
             if "Sign in to confirm" in error_msg or "bot" in error_msg.lower():
-                print(f"  ❌ Blocked by YouTube (trying next Invidious)")
+                print(f"  ❌ Blocked by YouTube (trying next)")
             else:
                 print(f"  ❌ Failed: {str(error_msg)[:50]}")
             continue
     
-    # Strategy 2: Try with cookies + Android client
-    cookie_paths = [
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "youtube_cookies.txt"),
-        os.path.join(os.path.expanduser("~"), "GodVCMusicBot", "youtube_cookies.txt"),
-        "/root/GodVCMusicBot/youtube_cookies.txt",
-        "youtube_cookies.txt"
-    ]
-    
-    for cookie_path in cookie_paths:
-        if os.path.exists(cookie_path):
-            try:
-                print(f"  → Attempting with cookies from: {cookie_path}")
-                opts = get_ydl_opts(clients=["android"])
-                opts["cookiefile"] = cookie_path
-                
-                with yt_dlp.YoutubeDL(opts) as ydl:
-                    result = ydl.extract_info(f"ytsearch1:{query}", download=False)["entries"][0]
-                
-                print(f"  ✅ Success with cookies!")
-                
-                # Get direct stream URL
-                direct_url = result.get("url")
-                
-                # If it's a webpage URL, extract the direct stream
-                if "youtube.com" in direct_url or "youtu.be" in direct_url:
-                    print(f"  🔄 Extracting direct stream URL...")
-                    stream_info = ydl.extract_info(direct_url, download=False)
-                    direct_url = stream_info.get("url")
-                
-                return {
-                    "title": result.get("title"),
-                    "url": direct_url,
-                    "thumbnail": result.get("thumbnail"),
-                    "webpage_url": result.get("webpage_url"),
-                    "duration": result.get("duration"),
-                }
-            except Exception as e:
-                print(f"  ❌ Cookie method failed: {str(e)[:50]}")
-                continue
-    
-    # Strategy 3: Direct YouTube with Android client (last resort)
-    try:
-        print(f"  → Last attempt: Direct YouTube (Android client)")
-        opts = get_ydl_opts(clients=["android"])
-        
-        with yt_dlp.YoutubeDL(opts) as ydl:
-            result = ydl.extract_info(f"ytsearch1:{query}", download=False)["entries"][0]
-        
-        print(f"  ✅ Success via direct!")
-        
-        # Get direct stream URL
-        direct_url = result.get("url")
-        
-        # If it's a webpage URL, extract the direct stream
-        if "youtube.com" in direct_url or "youtu.be" in direct_url:
-            print(f"  🔄 Extracting direct stream URL...")
-            stream_info = ydl.extract_info(direct_url, download=False)
-            direct_url = stream_info.get("url")
-        
-        return {
-            "title": result.get("title"),
-            "url": direct_url,
-            "thumbnail": result.get("thumbnail"),
-            "webpage_url": result.get("webpage_url"),
-            "duration": result.get("duration"),
-        }
-    except Exception as e:
-        print(f"  ❌ Direct failed: {str(e)[:80]}")
+    # Strategy 3: Direct YouTube with different clients
+    for client in ["android", "ios", "tvclient", "web"]:
+        try:
+            print(f"  → Last resort: {client} client")
+            opts = get_ydl_opts(clients=[client])
+            
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                result = ydl.extract_info(f"ytsearch1:{query}", download=False)["entries"][0]
+            
+            print(f"  ✅ Success via direct ({client})!")
+            
+            # Get direct stream URL
+            direct_url = result.get("url")
+            
+            # If it's a webpage URL, extract the direct stream
+            if "youtube.com" in direct_url or "youtu.be" in direct_url:
+                print(f"  🔄 Extracting direct stream URL...")
+                stream_info = ydl.extract_info(direct_url, download=False)
+                direct_url = stream_info.get("url")
+            
+            return {
+                "title": result.get("title"),
+                "url": direct_url,
+                "thumbnail": result.get("thumbnail"),
+                "webpage_url": result.get("webpage_url"),
+                "duration": result.get("duration"),
+            }
+        except Exception as e:
+            print(f"  ❌ {client} failed: {str(e)[:60]}")
+            continue
     
     raise Exception("All strategies failed - YouTube is blocking this server IP")
 
