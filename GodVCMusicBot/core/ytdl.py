@@ -11,18 +11,26 @@ INVIDIOUS_INSTANCES = [
     "https://invidious.blamefran.net",
 ]
 
-def get_ydl_opts(proxy=None, use_invidious=None):
-    """Get yt-dlp options with optional proxy and Invidious support"""
+def get_ydl_opts(proxy=None, use_invidious=None, clients=None):
+    """Get yt-dlp options with optional proxy, Invidious, and client support"""
+    
+    if clients is None:
+        clients = ["android"]
     
     opts = {
         "format": "bestaudio[ext=m4a]/bestaudio/best",
         "quiet": True,
         "no_warnings": True,
+        "noplaylist": True,
         "extractor_args": {
             "youtube": {
-                "player_client": ["web", "android"],
+                "player_client": clients,
+                "player_skip": ["configs"],
                 "skip": ["hls"]
             }
+        },
+        "http_headers": {
+            "User-Agent": "com.google.android.youtube/19.29.37 (Linux; U; Android 13)"
         },
         "no_check_certificate": True,
         "socket_timeout": 15,
@@ -34,13 +42,13 @@ def get_ydl_opts(proxy=None, use_invidious=None):
         print(f"  🌐 Using proxy: {proxy}")
     
     if use_invidious:
-        opts["invidious"] = use_indivious
+        opts["invidious"] = use_invidious
         print(f"  🔄 Using Invidious instance: {use_invidious}")
     
     return opts
 
 def search_youtube(query):
-    """Search YouTube using Invidious + direct connection + cookie fallback"""
+    """Search YouTube using Invidious + Android client fallback"""
     
     print(f"\n🔍 Searching for: {query}")
     
@@ -51,16 +59,17 @@ def search_youtube(query):
     for i, instance in enumerate(shuffled_instances, start=1):
         try:
             print(f"  → Attempt {i}: Invidious ({instance})")
-            opts = get_ydl_opts(use_indivious=instance)
+            opts = get_ydl_opts(use_invidious=instance, clients=["android"])
             
             with yt_dlp.YoutubeDL(opts) as ydl:
-                result = ydl.extract_info(f"ytsearch:{query}", download=False)["entries"][0]
+                result = ydl.extract_info(f"ytsearch1:{query}", download=False)["entries"][0]
             
             print(f"  ✅ Success via Invidious!")
-            # Get the direct stream URL from the result
+            
+            # Get direct stream URL
             direct_url = result.get("url")
             
-            # If it's a webpage URL, extract the direct stream URL
+            # If it's a webpage URL, extract the direct stream
             if "youtube.com" in direct_url or "youtu.be" in direct_url:
                 print(f"  🔄 Extracting direct stream URL...")
                 stream_info = ydl.extract_info(direct_url, download=False)
@@ -81,7 +90,7 @@ def search_youtube(query):
                 print(f"  ❌ Failed: {str(error_msg)[:50]}")
             continue
     
-    # Strategy 2: Try with cookies (if available)
+    # Strategy 2: Try with cookies + Android client
     cookie_paths = [
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "youtube_cookies.txt"),
         os.path.join(os.path.expanduser("~"), "GodVCMusicBot", "youtube_cookies.txt"),
@@ -93,17 +102,18 @@ def search_youtube(query):
         if os.path.exists(cookie_path):
             try:
                 print(f"  → Attempting with cookies from: {cookie_path}")
-                opts = get_ydl_opts()
+                opts = get_ydl_opts(clients=["android"])
                 opts["cookiefile"] = cookie_path
                 
                 with yt_dlp.YoutubeDL(opts) as ydl:
-                    result = ydl.extract_info(f"ytsearch:{query}", download=False)["entries"][0]
+                    result = ydl.extract_info(f"ytsearch1:{query}", download=False)["entries"][0]
                 
                 print(f"  ✅ Success with cookies!")
-                # Get the direct stream URL
+                
+                # Get direct stream URL
                 direct_url = result.get("url")
                 
-                # If it's a webpage URL, extract the direct stream URL
+                # If it's a webpage URL, extract the direct stream
                 if "youtube.com" in direct_url or "youtu.be" in direct_url:
                     print(f"  🔄 Extracting direct stream URL...")
                     stream_info = ydl.extract_info(direct_url, download=False)
@@ -120,19 +130,20 @@ def search_youtube(query):
                 print(f"  ❌ Cookie method failed: {str(e)[:50]}")
                 continue
     
-    # Strategy 3: Direct YouTube (last resort)
+    # Strategy 3: Direct YouTube with Android client (last resort)
     try:
-        print(f"  → Last attempt: Direct YouTube")
-        opts = get_ydl_opts()
+        print(f"  → Last attempt: Direct YouTube (Android client)")
+        opts = get_ydl_opts(clients=["android"])
         
         with yt_dlp.YoutubeDL(opts) as ydl:
-            result = ydl.extract_info(f"ytsearch:{query}", download=False)["entries"][0]
+            result = ydl.extract_info(f"ytsearch1:{query}", download=False)["entries"][0]
         
         print(f"  ✅ Success via direct!")
-        # Get the direct stream URL
+        
+        # Get direct stream URL
         direct_url = result.get("url")
         
-        # If it's a webpage URL, extract the direct stream URL
+        # If it's a webpage URL, extract the direct stream
         if "youtube.com" in direct_url or "youtu.be" in direct_url:
             print(f"  🔄 Extracting direct stream URL...")
             stream_info = ydl.extract_info(direct_url, download=False)
