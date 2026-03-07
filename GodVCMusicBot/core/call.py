@@ -24,6 +24,11 @@ async def start_playback(chat_id):
                 print(f"❌ ERROR starting playback: {type(e).__name__}: {e}")
                 import traceback
                 traceback.print_exc()
+                
+                # Put the song back in queue at the front
+                from core.queue import music_queue
+                music_queue[chat_id].insert(0, next_item)
+                
                 raise
         else:
             print(f"⚠️ No item in queue for chat {chat_id}")

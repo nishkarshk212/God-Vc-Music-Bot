@@ -86,12 +86,19 @@ async def play(message: types.Message):
         pass
     await asyncio.sleep(1)
     print(f"📥 Getting info from YouTube...")
-    info = search_youtube(query)
-    title = info["title"]
-    stream_url = info["url"]
-    thumb = info["thumbnail"]
-    print(f"✅ Found: {title}")
-    print(f"🔗 Stream URL: {stream_url[:80]}...")
+    try:
+        info = search_youtube(query)
+        title = info["title"]
+        stream_url = info["url"]
+        thumb = info["thumbnail"]
+        print(f"✅ Found: {title}")
+        print(f"🔗 Stream URL: {stream_url[:80]}...")
+    except Exception as e:
+        print(f"❌ ERROR searching YouTube: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+        await status.edit_text("❌ Failed to find the song. Please try again.")
+        return
     
     # Check if already playing BEFORE adding to queue
     was_playing = is_playing(message.chat.id)
@@ -107,8 +114,17 @@ async def play(message: types.Message):
     add_to_queue(message.chat.id, item)
     position = len(get_queue(message.chat.id))
     if not was_playing:
-        await start_playback(message.chat.id)
-        print(f"🎵 Started playback in chat {message.chat.id}")
+        try:
+            await start_playback(message.chat.id)
+            print(f"🎵 Started playback in chat {message.chat.id}")
+        except Exception as e:
+            print(f"❌ Failed to start playback: {e}")
+            await status.edit_text(f"❌ Failed to play music. Error: {str(e)[:100]}")
+            # Remove the song from queue
+            from core.queue import music_queue
+            if music_queue[message.chat.id]:
+                music_queue[message.chat.id].pop()
+            return
         
         # Get voice chat participants
         vc_participants = await get_voice_chat_participants(message.bot, message.chat.id)
