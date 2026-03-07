@@ -1,7 +1,8 @@
 import yt_dlp
 import os
 import random
-import urllib.parse
+import urllib.request
+import json
 
 # List of Invidious instances (alternative YouTube frontends)
 INVIDIOUS_INSTANCES = [
@@ -9,22 +10,36 @@ INVIDIOUS_INSTANCES = [
     "https://invidious.fdn.fr",
     "https://yewtu.be",
     "https://inv.riverside.rocks",
-    "https://invidious.blamefran.net",
     "https://vid.puffyan.us",
     "https://invidious.privacydev.net",
     "https://inv.tux.pizza",
 ]
 
-# List of Piped instances (another alternative frontend)
-PIPED_INSTANCES = [
-    "https://pipedapi.kavin.rocks",
-    "https://pipedapi.adminforge.de",
-    "https://pipedapi.in.projectsegfau.lt",
-]
-
-def get_ydl_opts(proxy=None, use_invidious=None, clients=None):
-    """Get yt-dlp options with optional proxy, Invidious, and client support"""
+def fetch_working_proxies():
+    """Fetch free working proxies"""
+    proxy_urls = [
+        "https://api.proxyscrape.com/v2/?request=display&protocol=http&timeout=10000&country=all&ssl=all&anonymity=all",
+        "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
+        "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt",
+    ]
     
+    proxies = []
+    for url in proxy_urls:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=5) as response:
+                data = response.read().decode("utf-8", errors="ignore")
+                found = [p.strip() for p in data.split("\n") if ":" in p and len(p.split(":")) == 2]
+                proxies.extend(found[:5])
+        except Exception as e:
+            print(f"  ⚠️ Proxy list failed: {str(e)[:40]}")
+            continue
+    
+    random.shuffle(proxies)
+    return proxies[:10]
+
+def get_ydl_opts(clients=None, use_invidious=None, proxy=None):
+    """Get yt-dlp options with optional proxy"""
     if clients is None:
         clients = ["android"]
     
@@ -44,83 +59,47 @@ def get_ydl_opts(proxy=None, use_invidious=None, clients=None):
             "User-Agent": "com.google.android.youtube/19.29.37 (Linux; U; Android 13)"
         },
         "no_check_certificate": True,
-        "socket_timeout": 15,
+        "socket_timeout": 30,
         "retries": 2
     }
     
     if proxy:
         opts["proxy"] = proxy
-        print(f"  🌐 Using proxy: {proxy}")
+        print(f"     🌐 Using proxy: {proxy[:50]}...")
     
-    if use_invidious:
+    if use_indivious:
         opts["invidious"] = use_invidious
-        print(f"  🔄 Using Invidious instance: {use_invidious}")
+        print(f"     🔄 Using Invidious: {use_invidious}")
     
     return opts
 
 def search_youtube(query):
-    """Search YouTube using Piped + Invidious + client fallback"""
+    """Search YouTube using Invidious + proxy fallback"""
     
     print(f"\n🔍 Searching for: {query}")
     
-    # Strategy 1: Try Piped instances (most reliable currently)
-    for instance in PIPED_INSTANCES:
-        try:
-            print(f"  → Attempt: Piped ({instance})")
-            import urllib.request
-            import json
-            
-            # Search via Piped API
-            url = f"{instance}/search?q={urllib.parse.quote(query)}&filter=videos"
-            req = urllib.request.Request(url, headers={'Accept': 'application/json'})
-            with urllib.request.urlopen(req, timeout=10) as response:
-                data = json.loads(response.read().decode())
-            
-            if data.get('items') and len(data['items']) > 0:
-                video_id = data['items'][0].get('url', '').replace('/watch?v=', '')
-                title = data['items'][0].get('title', 'Unknown')
-                
-                if video_id:
-                    webpage_url = f"https://www.youtube.com/watch?v={video_id}"
-                    print(f"  ✅ Success via Piped!")
-                    
-                    # Now get the stream URL using yt-dlp with Android client
-                    opts = get_ydl_opts(clients=["android"])
-                    with yt_dlp.YoutubeDL(opts) as ydl:
-                        stream_info = ydl.extract_info(webpage_url, download=False)
-                        direct_url = stream_info.get("url")
-                    
-                    return {
-                        "title": title,
-                        "url": direct_url,
-                        "thumbnail": data['items'][0].get('thumbnail', ''),
-                        "webpage_url": webpage_url,
-                        "duration": data['items'][0].get('duration', 0),
-                    }
-        except Exception as e:
-            print(f"  ❌ Piped failed: {str(e)[:50]}")
-            continue
+    # Fetch proxies first
+    proxies = fetch_working_proxies()
+    print(f"  📡 Fetched {len(proxies)} proxies")
     
-    # Strategy 2: Try ALL Invidious instances
+    # Strategy 1: Try Invidious instances (with and without proxies)
     shuffled_instances = INVIDIOUS_INSTANCES.copy()
     random.shuffle(shuffled_instances)
     
-    for i, instance in enumerate(shuffled_instances, start=1):
+    for instance in shuffled_instances:
+        # Try without proxy first
         try:
-            print(f"  → Attempt {i}: Invidious ({instance})")
-            opts = get_ydl_opts(use_invidious=instance, clients=["android"])
+            print(f"  → Testing Invidious: {instance}")
+            opts = get_ydl_opts(use_invidious=instance, clients=["web"])
             
             with yt_dlp.YoutubeDL(opts) as ydl:
                 result = ydl.extract_info(f"ytsearch1:{query}", download=False)["entries"][0]
             
             print(f"  ✅ Success via Invidious!")
             
-            # Get direct stream URL
             direct_url = result.get("url")
-            
-            # If it's a webpage URL, extract the direct stream
             if "youtube.com" in direct_url or "youtu.be" in direct_url:
-                print(f"  🔄 Extracting direct stream URL...")
+                print(f"  🔄 Extracting stream...")
                 stream_info = ydl.extract_info(direct_url, download=False)
                 direct_url = stream_info.get("url")
             
@@ -133,44 +112,61 @@ def search_youtube(query):
             }
         except Exception as e:
             error_msg = str(e)
-            if "Sign in to confirm" in error_msg or "bot" in error_msg.lower():
-                print(f"  ❌ Blocked by YouTube (trying next)")
-            else:
-                print(f"  ❌ Failed: {str(error_msg)[:50]}")
-            continue
+            print(f"  ❌ Failed: {error_msg[:60]}")
+            
+            # Try with 2-3 proxies
+            for proxy in proxies[:3]:
+                try:
+                    opts = get_ydl_opts(use_invidious=instance, clients=["web"], proxy=f"http://{proxy}")
+                    
+                    with yt_dlp.YoutubeDL(opts) as ydl:
+                        result = ydl.extract_info(f"ytsearch1:{query}", download=False)["entries"][0]
+                    
+                    print(f"  ✅ Success via Invidious + Proxy!")
+                    
+                    direct_url = result.get("url")
+                    if "youtube.com" in direct_url or "youtu.be" in direct_url:
+                        stream_info = ydl.extract_info(direct_url, download=False)
+                        direct_url = stream_info.get("url")
+                    
+                    return {
+                        "title": result.get("title"),
+                        "url": direct_url,
+                        "thumbnail": result.get("thumbnail"),
+                        "webpage_url": result.get("webpage_url"),
+                        "duration": result.get("duration"),
+                    }
+                except Exception as e2:
+                    continue
     
-    # Strategy 3: Direct YouTube with different clients
-    for client in ["android", "ios", "tvclient", "web"]:
-        try:
-            print(f"  → Last resort: {client} client")
-            opts = get_ydl_opts(clients=[client])
-            
-            with yt_dlp.YoutubeDL(opts) as ydl:
-                result = ydl.extract_info(f"ytsearch1:{query}", download=False)["entries"][0]
-            
-            print(f"  ✅ Success via direct ({client})!")
-            
-            # Get direct stream URL
-            direct_url = result.get("url")
-            
-            # If it's a webpage URL, extract the direct stream
-            if "youtube.com" in direct_url or "youtu.be" in direct_url:
-                print(f"  🔄 Extracting direct stream URL...")
-                stream_info = ydl.extract_info(direct_url, download=False)
-                direct_url = stream_info.get("url")
-            
-            return {
-                "title": result.get("title"),
-                "url": direct_url,
-                "thumbnail": result.get("thumbnail"),
-                "webpage_url": result.get("webpage_url"),
-                "duration": result.get("duration"),
-            }
-        except Exception as e:
-            print(f"  ❌ {client} failed: {str(e)[:60]}")
-            continue
+    # Strategy 2: Direct YouTube with different clients + proxies
+    for client in ["tvclient", "ios", "android"]:
+        for proxy in proxies[:2]:
+            try:
+                print(f"  → Trying {client} client with proxy")
+                opts = get_ydl_opts(clients=[client], proxy=f"http://{proxy}")
+                
+                with yt_dlp.YoutubeDL(opts) as ydl:
+                    result = ydl.extract_info(f"ytsearch1:{query}", download=False)["entries"][0]
+                
+                print(f"  ✅ Success via direct ({client}) + Proxy!")
+                
+                direct_url = result.get("url")
+                if "youtube.com" in direct_url or "youtu.be" in direct_url:
+                    stream_info = ydl.extract_info(direct_url, download=False)
+                    direct_url = stream_info.get("url")
+                
+                return {
+                    "title": result.get("title"),
+                    "url": direct_url,
+                    "thumbnail": result.get("thumbnail"),
+                    "webpage_url": result.get("webpage_url"),
+                    "duration": result.get("duration"),
+                }
+            except:
+                continue
     
-    raise Exception("All strategies failed - YouTube is blocking this server IP")
+    raise Exception("All strategies failed - Server IP is blocked by YouTube")
 
 def search_youtube_video(query):
     return search_youtube(query)
