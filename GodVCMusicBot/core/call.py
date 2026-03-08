@@ -1,7 +1,7 @@
 import os
 import asyncio
 from assistant import call_py, assistant
-from core.queue import pop_song, get_queue, clear_queue
+from core.queue import pop_song, get_queue, clear_queue, queue_manager
 from pytgcalls.types.stream import MediaStream
 from pytgcalls.types.stream import AudioQuality
 
@@ -112,6 +112,10 @@ async def stop(chat_id):
     # Stop VC monitor if running
     stop_vc_monitor(chat_id)
     
+    # Mark VC as ended and clear queue
+    from core.queue import queue_manager
+    queue_manager.mark_vc_ended(chat_id)
+    
     try:
         await call_py.leave_group_call(chat_id)
     except Exception as e:
@@ -190,15 +194,15 @@ async def vc_participant_monitor(chat_id):
                                 "chat_title": f"Voice Chat (Empty)",
                                 "chat_username": None,
                                 "last_title": "Stream ended - No participants",
-                                "message": f"⏹️ <b>AUTO-STOPPED</b>\n\n💬 Voice chat was empty for 30 seconds.\n🎵 Stream stopped automatically.\n\n#AutoStop"
+                                "message": f"⏹️ <b>AUTO-STOPPED</b>\n\n💬 Voice chat was empty for 30 seconds.\n🗑️ Queue cleared automatically.\n🎵 Stream stopped.\n\n#AutoStop"
                             }
                             asyncio.create_task(send_stop_notification(bot=bot, stop_info=stop_info))
                         except Exception as notify_err:
                             print(f"Failed to send auto-stop notification: {notify_err}")
                         
-                        # Stop the stream
+                        # Stop the stream and clear queue
                         await stop(chat_id)
-                        print(f"✅ Stream auto-stopped successfully")
+                        print(f"✅ Stream auto-stopped and queue cleared successfully")
                         break
                 else:
                     # Reset counter if someone joins

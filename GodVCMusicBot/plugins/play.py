@@ -43,7 +43,13 @@ async def play(message: types.Message):
     if play_mode == "requester_only":
         # Check if user is currently playing or has songs in queue
         from core.call import active_chats
-        from core.queue import get_queue
+        from core.queue import get_queue, queue_manager
+        
+        # Check if VC ended - if so, clear status and allow fresh start
+        if queue_manager.is_vc_ended(chat_id):
+            queue_manager.unmark_vc_ended(chat_id)
+            print(f"✅ Resetting VC ended status for chat {chat_id}")
+        
         q = get_queue(chat_id)
         user_has_song = any(item.get('requester_id') == user_id for item in q if isinstance(item, dict))
         
