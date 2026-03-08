@@ -2,7 +2,7 @@ from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from core.call import stop
-from core.queue import get_queue
+from core.queue import get_queue, clear_queue
 from utils.logger import send_stop_notification
 from utils.settings import get_chat_settings
 import asyncio
@@ -40,47 +40,6 @@ async def stop_cmd(message: types.Message):
             await message.answer("❌ No song is currently playing.")
             return
     
-    msg = await message.answer("⏹ Initiating Music Shutdown...")
-    
-    frames = [
-        "🎶 𝙎𝙩𝙤𝙥𝙥𝙞𝙣𝙜 𝙖𝙪𝙙𝙞𝙤 𝙨𝙩𝙧𝙚𝙖𝙢\n\n▰▱▱▱▱",
-        "🎶 𝙎𝙩𝙤𝙥𝙥𝙞𝙣𝙜 𝙖𝙪𝙙𝙞𝙤 𝙨𝙩𝙧𝙚𝙖𝙢\n\n▰▰▱▱▱",
-        "🎶 𝙎𝙩𝙤𝙥𝙥𝙞𝙣𝙜 𝙖𝙪𝙙𝙞𝙤 𝙨𝙩𝙧𝙚𝙖𝙢\n\n▰▰▰▱▱",
-        "🎶 𝙎𝙩𝙤𝙥𝙥𝙞𝙣𝙜 𝙖𝙪𝙙𝙞𝙤 𝙨𝙩𝙧𝙚𝙖𝙢\n\n▰▰▰▰▱",
-        "🎶 𝙎𝙩𝙤𝙥𝙥𝙞𝙣𝙜 𝙖𝙪𝙙𝙞𝙤 𝙨𝙩𝙧𝙚𝙖𝙢\n\n▰▰▰▰▰"
-    ]
-    
-    for frame in frames:
-        await asyncio.sleep(0.6)
-        try:
-            await msg.edit_text(frame)
-        except Exception as e:
-            if "FLOOD_WAIT" in str(e):
-                wait_time = int(str(e).split("_X] - A wait of ")[1].split(" seconds")[0]) if "_X] - A wait of " in str(e) else 5
-                await asyncio.sleep(wait_time + 1)
-                await msg.edit_text(frame)
-            pass
-    
-    try:
-        await msg.edit_text("🧹 Clearing Queue...")
-    except Exception as e:
-        if "FLOOD_WAIT" in str(e):
-            wait_time = int(str(e).split("_X] - A wait of ")[1].split(" seconds")[0]) if "_X] - A wait of " in str(e) else 5
-            await asyncio.sleep(wait_time + 1)
-            await msg.edit_text("🧹 Clearing Queue...")
-        pass
-    await asyncio.sleep(1)
-    
-    try:
-        await msg.edit_text("🔌 Disconnecting Voice Chat...")
-    except Exception as e:
-        if "FLOOD_WAIT" in str(e):
-            wait_time = int(str(e).split("_X] - A wait of ")[1].split(" seconds")[0]) if "_X] - A wait of " in str(e) else 5
-            await asyncio.sleep(wait_time + 1)
-            await msg.edit_text("🔌 Disconnecting Voice Chat...")
-        pass
-    await asyncio.sleep(1)
-    
     # Get current playing song before stopping
     current_q = get_queue(message.chat.id)
     last_song = current_q[0] if len(current_q) > 0 else None
@@ -89,7 +48,10 @@ async def stop_cmd(message: types.Message):
     # Stop VC stream
     await stop(message.chat.id)
     
-    # Send stop notification to log channel
+    # Clear the queue
+    clear_queue(message.chat.id)
+    
+    # Send stop notification to log channel with detailed info
     stop_info = {
         "requester_name": message.from_user.first_name,
         "requester_id": message.from_user.id,
@@ -97,10 +59,12 @@ async def stop_cmd(message: types.Message):
         "chat_id": message.chat.id,
         "chat_title": message.chat.title,
         "chat_username": message.chat.username if hasattr(message.chat, 'username') else None,
-        "last_title": last_title
+        "last_title": last_title,
+        "message": f"⏹️ <b>STOPPED</b> by {message.from_user.mention()}\n🎵 <b>Last Song:</b> {last_title}\n💬 <b>Chat:</b> {message.chat.title}"
     }
     asyncio.create_task(send_stop_notification(bot=message.bot, stop_info=stop_info))
     
+    # Send simple stop message
     user = message.from_user.first_name if message.from_user else "Unknown"
     final_text = f"""
 ✅ 𝙈𝙪𝙨𝙞𝙘 𝙋𝙡𝙖𝙮𝙚𝙧 𝙎𝙩𝙤𝙥𝙥𝙚𝙙
@@ -115,4 +79,4 @@ async def stop_cmd(message: types.Message):
 Use /𝒑𝒍𝒂𝒚 to start music again.
 """
     keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="✕ Close", callback_data="close")]])
-    await msg.edit_text(final_text, reply_markup=keyboard)
+    await message.answer(final_text, reply_markup=keyboard)

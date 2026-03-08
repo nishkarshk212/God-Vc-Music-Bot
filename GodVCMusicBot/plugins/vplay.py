@@ -50,17 +50,38 @@ async def vplay(message: types.Message):
             await status.edit_text("📺 Starting Video Stream...")
         pass
     await asyncio.sleep(1)
-    info = search_youtube_video(query)
+    info = await search_youtube_video(query)
     title = info["title"]
-    stream_url = info["url"]
-    thumb = info["thumbnail"]
+    stream_url = info.get("url")
+    thumb = info.get("thumbnail")
+    webpage_url = info.get("webpage_url")
+
+    # Strategy: Download first for stability (Done silently in background)
+    from core.ytdl import download_video
+    file_path = await download_video(webpage_url or stream_url or query)
+
+    if not file_path:
+        # Resolve stream URL if download missing
+        if not stream_url and webpage_url:
+            print(f"  → Video stream URL missing, resolving from {webpage_url}...")
+            from core.ytdl import resolve_stream
+            try:
+                stream_url = await resolve_stream(webpage_url)
+            except Exception as resolve_err:
+                print(f"❌ Video resolution failed: {resolve_err}")
+                stream_url = webpage_url
+        file_path = stream_url
+
+    if not file_path:
+        await status.edit_text("❌ Failed to find or download the video. Please try again.")
+        return
     
     # Check if already playing BEFORE adding to queue
     was_playing = is_playing(message.chat.id)
     
     item = {
         "title": title,
-        "url": stream_url,
+        "url": file_path,
         "thumbnail": thumb,
         "duration": info.get("duration"),
         "requester_id": message.from_user.id,

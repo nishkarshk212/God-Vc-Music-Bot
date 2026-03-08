@@ -1,6 +1,6 @@
-hydrogram
+pyrogram==2.0.106
 tgcrypto
-py-tgcalls
+py-tgcalls>=1.0.9
 aiogram>=3.0.0
 yt-dlp
 pillow
@@ -8,3 +8,4 @@ requests
 aiohttp
 ffmpeg-python
 python-dotenv
+nest_asyncio

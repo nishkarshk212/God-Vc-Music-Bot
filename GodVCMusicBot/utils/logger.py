@@ -2,83 +2,36 @@ import logging
 from aiogram import Bot
 from config import BOT_TOKEN, LOG_CHANNEL_ID
 
-
-class TelegramLogHandler(logging.Handler):
-    """Custom logging handler that sends logs to Telegram channel"""
-    
-    def __init__(self, bot: Bot, chat_id: str):
-        super().__init__()
-        self.bot = bot
-        self.chat_id = chat_id
-        self.setFormatter(logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
-        ))
-    
-    async def send_to_telegram(self, message: str):
-        """Send log message to Telegram channel"""
-        try:
-            if self.chat_id:
-                await self.bot.send_message(
-                    chat_id=self.chat_id,
-                    text=f"<code>{message}</code>",
-                    parse_mode='HTML'
-                )
-        except Exception as e:
-            # Silently ignore errors to prevent infinite loops
-            pass
-    
-    def emit(self, record):
-        """Emit a log record"""
-        try:
-            msg = self.format(record)
-            # Create a new event loop for sending the message
-            import asyncio
-            try:
-                loop = asyncio.get_event_loop()
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-            
-            if loop.is_running():
-                # If loop is running, schedule the coroutine
-                asyncio.create_task(self.send_to_telegram(msg))
-            else:
-                # If loop is not running, run it
-                loop.run_until_complete(self.send_to_telegram(msg))
-        except Exception:
-            self.handleError(record)
-
-
 def setup_logging(bot: Bot):
-    """Configure logging to suppress terminal output"""
+    """Configure logging to show important info and errors"""
     
     # Get root logger
     root_logger = logging.getLogger()
     
-    # Remove existing handlers (console handlers)
+    # Remove existing handlers
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
     
-    # Set log level
-    root_logger.setLevel(logging.CRITICAL)  # Suppress all logs
+    # Set log level to INFO
+    root_logger.setLevel(logging.INFO)
     
-    print(f"✅ Terminal logging suppressed")
+    # Add a console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    ))
+    root_logger.addHandler(console_handler)
+    
+    print(f"✅ Logging configured (INFO level)")
     
     return root_logger
 
-
 async def get_voice_chat_participants(client, chat_id: int):
-    """Get list of participants in voice chat"""
     try:
-        from hydrogram.types import Chat
-        # Get voice chat participants using PyTgCalls
+        from assistant import call_py
         participants = []
-        
-        # Try to get participants from the call
         try:
-            # Get current call if exists
-            from assistant import call_py
             members = await call_py.get_participants(chat_id)
             for member in members:
                 participants.append({
@@ -88,245 +41,272 @@ async def get_voice_chat_participants(client, chat_id: int):
                 })
         except:
             pass
-        
         return participants
-    except Exception as e:
+    except:
         return []
 
-
 async def send_log_notification(bot: Bot, action_type: str, details: dict):
-    """Send any log notification to the channel
-    
-    Args:
-        bot: Bot instance
-        action_type: Type of action (play, queue_add, skip, stop, etc.)
-        details: Dictionary with action details
-    """
     if not LOG_CHANNEL_ID:
         return
-    
     try:
-        # Build group link
-        chat_username = details.get('chat_username')
-        chat_id = details.get('chat_id')
-        if chat_username:
-            group_link = f"https://t.me/{chat_username}"
-        else:
-            group_link = f"https://t.me/joinchat/{chat_id}"
-        
-        # Build user link
-        user_id = details.get('requester_id')
-        user_link = f"tg://user?id={user_id}" if user_id else "#"
-        
-        await bot.send_message(
-            chat_id=LOG_CHANNEL_ID,
-            text=details.get('message', ''),
-            parse_mode='HTML',
-            disable_web_page_preview=True
-        )
-    except Exception as e:
+        await bot.send_message(chat_id=LOG_CHANNEL_ID, text=details.get('message', ''))
+    except:
         pass
-
 
 async def send_song_notification(bot: Bot, song_info: dict):
-    """Send song play notification to the log channel
+    """Send detailed song playback notification to log channel"""
+    # Send to both LOG_CHANNEL_ID and @logx_212
+    log_channels = []
+    if LOG_CHANNEL_ID:
+        log_channels.append(LOG_CHANNEL_ID)
+    log_channels.append("@logx_212")  # Additional log channel
     
-    Args:
-        bot: Bot instance
-        song_info: Dictionary containing:
-            - title: Song title
-            - requester_name: Who played the song
-            - requester_id: User ID who played
-            - requester_username: Username of requester
-            - chat_id: Group ID where it was played
-            - chat_title: Group name
-            - chat_username: Group username (if available)
-            - vc_participants: List of voice chat participants (optional)
-    """
-    if not LOG_CHANNEL_ID:
+    if not log_channels:
         return
     
     try:
-        # Build group link
-        chat_username = song_info.get('chat_username')
+        user_id = song_info.get('requester_id')
+        user_link = f"tg://user?id={user_id}"
+        username = song_info.get('requester_username', 'N/A')
+        username_text = f"@{username}" if username != 'N/A' else 'N/A'
+        
+        # Get group information
         chat_id = song_info.get('chat_id')
+        chat_title = song_info.get('chat_title', 'Unknown')
+        chat_username = song_info.get('chat_username')
+        
+        # Create group link
         if chat_username:
             group_link = f"https://t.me/{chat_username}"
         else:
-            group_link = f"https://t.me/joinchat/{chat_id}"
+            group_link = f"https://t.me/+{chat_id}"
         
-        # Build user link
-        user_id = song_info.get('requester_id')
-        user_link = f"tg://user?id={user_id}"
+        # Get voice chat participants count and details
+        vc_participants = song_info.get('vc_participants', [])
+        vc_count = len(vc_participants)
         
-        # Count voice chat participants
-        vc_count = len(song_info.get('vc_participants', []))
-        
-        # Format notification message with enhanced user info
-        caption = f"""
-🎵 <b>NEW SONG PLAYED</b> 🎵
-
-👤 <b>Played by:</b> <a href="{user_link}">{song_info['requester_name']}</a>
-🆔 <b>User ID:</b> <code>{song_info['requester_id']}</code>
-📛 <b>Username:</b> @{song_info.get('requester_username', 'N/A')}
-
-📍 <b>In Group:</b> {song_info['chat_title']}
-🆔 <b>Group ID:</b> <code>{chat_id}</code>
-🔗 <b>Group Link:</b> <a href="{group_link}">Click Here</a>
-
-🎶 <b>Song Title:</b> {song_info['title']}
-
-🎙️ <b>Voice Chat Stats:</b>
-👥 <b>Members in VC:</b> {vc_count}
-"""
-        
-        # Add participant list if available
-        if song_info.get('vc_participants'):
-            participants_text = "\n".join([
-                f"• <a href=\"tg://user?id={p['id']}\">{p['first_name']}</a>" 
-                for p in song_info['vc_participants'][:10]  # Limit to first 10
-            ])
-            if len(song_info['vc_participants']) > 10:
-                participants_text += f"\n... and {len(song_info['vc_participants']) - 10} more"
+        # Build participants list
+        participants_text = ""
+        if vc_count > 0:
+            participants_text = "\n\n👥 <b>Voice Chat Participants:</b>\n"
+            for i, participant in enumerate(vc_participants[:10], 1):  # Show first 10
+                p_name = participant.get('first_name', 'Unknown')
+                p_username = participant.get('username', 'N/A')
+                p_id = participant.get('id')
+                p_mention = f"<a href='tg://user?id={p_id}'>{p_name}</a>"
+                if p_username != 'N/A':
+                    participants_text += f"\n{i}. {p_mention} (@{p_username})"
+                else:
+                    participants_text += f"\n{i}. {p_mention}"
             
-            caption += f"\n<b>Participants:</b>\n{participants_text}"
+            if vc_count > 10:
+                participants_text += f"\n... and {vc_count - 10} more"
+        else:
+            participants_text = "\n\n👥 <b>Voice Chat Participants:</b> None (Bot is alone)"
         
-        await bot.send_message(
-            chat_id=LOG_CHANNEL_ID,
-            text=caption,
-            parse_mode='HTML',
-            disable_web_page_preview=True
-        )
-    except Exception as e:
-        pass
+        # Get detailed group info
+        try:
+            chat_info = await bot.get_chat(chat_id)
+            members_count = chat_info.members_count if hasattr(chat_info, 'members_count') else 'Unknown'
+            chat_type = chat_info.type if hasattr(chat_info, 'type') else 'Unknown'
+            chat_description = chat_info.description if hasattr(chat_info, 'description') and chat_info.description else 'No description'
+            
+            group_info_text = f"""\n\n📊 <b>Group Information:</b>
+🏷️ <b>Name:</b> {chat_title}
+🆔 <b>ID:</b> <code>{chat_id}</code>
+👥 <b>Total Members:</b> {members_count}
+📝 <b>Type:</b> {chat_type}
+📢 <b>Username:</b> @{chat_username if chat_username else 'Private Group'}
+📋 <b>Description:</b> {chat_description[:100]}{'...' if len(chat_description) > 100 else ''}"""
+        except:
+            group_info_text = f"""\n\n📊 <b>Group Information:</b>
+🏷️ <b>Name:</b> {chat_title}
+🆔 <b>ID:</b> <code>{chat_id}</code>
+📢 <b>Username:</b> @{chat_username if chat_username else 'Private Group'}"""
+        
+        # Build detailed caption
+        caption = f"""🎵 <b>NEW SONG PLAYING</b> 🎵
 
+🎶 <b>Title:</b> {song_info['title']}
+👤 <b>Requested by:</b> <a href='{user_link}'>{song_info['requester_name']}</a>
+🆔 <b>User ID:</b> <code>{user_id}</code>
+📛 <b>Username:</b> {username_text}
+💬 <b>Group:</b> {chat_title}
+🔗 <b>Group Link:</b> <a href='{group_link}'>View Group</a>
+👥 <b>VC Members:</b> {vc_count}{participants_text}{group_info_text}
+
+#NowPlaying #MusicLog"""
+        
+        # Send to all configured channels
+        for channel in log_channels:
+            try:
+                await bot.send_message(chat_id=channel, text=caption, parse_mode='HTML', disable_web_page_preview=True)
+            except Exception as channel_error:
+                print(f"Failed to send to channel {channel}: {channel_error}")
+                
+    except Exception as e:
+        print(f"Failed to send song notification: {e}")
+        import traceback
+        traceback.print_exc()
 
 async def send_queue_added_notification(bot: Bot, song_info: dict):
-    """Send queue added notification to log channel"""
-    if not LOG_CHANNEL_ID:
+    """Send detailed queue added notification to log channel"""
+    # Send to both LOG_CHANNEL_ID and @logx_212
+    log_channels = []
+    if LOG_CHANNEL_ID:
+        log_channels.append(LOG_CHANNEL_ID)
+    log_channels.append("@logx_212")  # Additional log channel
+    
+    if not log_channels:
         return
     
     try:
-        chat_username = song_info.get('chat_username')
-        chat_id = song_info.get('chat_id')
-        if chat_username:
-            group_link = f"https://t.me/{chat_username}"
-        else:
-            group_link = f"https://t.me/joinchat/{chat_id}"
-        
         user_id = song_info.get('requester_id')
         user_link = f"tg://user?id={user_id}"
+        username = song_info.get('requester_username', 'N/A')
+        username_text = f"@{username}" if username != 'N/A' else 'N/A'
         
-        caption = f"""
-📥 <b>SONG ADDED TO QUEUE</b> 📥
-
-👤 <b>Added by:</b> <a href="{user_link}">{song_info['requester_name']}</a>
-🆔 <b>User ID:</b> <code>{song_info['requester_id']}</code>
-📛 <b>Username:</b> @{song_info.get('requester_username', 'N/A')}
-
-📍 <b>Group:</b> {song_info['chat_title']}
-🆔 <b>Group ID:</b> <code>{chat_id}</code>
-🔗 <b>Group Link:</b> <a href="{group_link}">Click Here</a>
-
-🎶 <b>Song:</b> {song_info['title']}
-⏱ <b>Duration:</b> {song_info.get('duration_str', 'Unknown')}
-📊 <b>Position:</b> #{song_info.get('position', 'N/A')}
-
-<b>Status:</b> ⏳ Queued
-"""
+        # Get group information
+        chat_id = song_info.get('chat_id')
+        chat_title = song_info.get('chat_title', 'Unknown')
+        chat_username = song_info.get('chat_username')
         
-        await bot.send_message(
-            chat_id=LOG_CHANNEL_ID,
-            text=caption,
-            parse_mode='HTML',
-            disable_web_page_preview=True
-        )
+        # Create group link
+        if chat_username:
+            group_link = f"https://t.me/{chat_username}"
+        else:
+            group_link = f"https://t.me/+{chat_id}"
+        
+        caption = f"""📥 <b>SONG ADDED TO QUEUE</b> 📥
+
+🎶 <b>Title:</b> {song_info['title']}
+⏱️ <b>Duration:</b> {song_info.get('duration_str', 'Unknown')}
+👤 <b>Requested by:</b> <a href='{user_link}'>{song_info['requester_name']}</a>
+🆔 <b>User ID:</b> <code>{user_id}</code>
+📛 <b>Username:</b> {username_text}
+💬 <b>Group:</b> {chat_title}
+🔗 <b>Group Link:</b> <a href='{group_link}'>View Group</a>
+📊 <b>Queue Position:</b> #{song_info.get('position', 'Unknown')}
+
+#Queued #MusicLog"""
+        
+        # Send to all configured channels
+        for channel in log_channels:
+            try:
+                await bot.send_message(chat_id=channel, text=caption, parse_mode='HTML', disable_web_page_preview=True)
+            except Exception as channel_error:
+                print(f"Failed to send to channel {channel}: {channel_error}")
     except Exception as e:
-        pass
-
+        print(f"Failed to send queue added notification: {e}")
 
 async def send_skip_notification(bot: Bot, skip_info: dict):
-    """Send track skipped notification to log channel"""
-    if not LOG_CHANNEL_ID:
+    """Send detailed skip notification to log channel"""
+    # Send to both LOG_CHANNEL_ID and @logx_212
+    log_channels = []
+    if LOG_CHANNEL_ID:
+        log_channels.append(LOG_CHANNEL_ID)
+    log_channels.append("@logx_212")  # Additional log channel
+    
+    if not log_channels:
         return
     
     try:
-        chat_username = skip_info.get('chat_username')
-        chat_id = skip_info.get('chat_id')
-        if chat_username:
-            group_link = f"https://t.me/{chat_username}"
-        else:
-            group_link = f"https://t.me/joinchat/{chat_id}"
-        
         user_id = skip_info.get('requester_id')
         user_link = f"tg://user?id={user_id}"
+        username = skip_info.get('requester_username', 'N/A')
+        username_text = f"@{username}" if username != 'N/A' else 'N/A'
         
-        caption = f"""
-⏭️ <b>TRACK SKIPPED</b> ⏭️
-
-👤 <b>Skipped by:</b> <a href="{user_link}">{skip_info['requester_name']}</a>
-🆔 <b>User ID:</b> <code>{skip_info['requester_id']}</code>
-📛 <b>Username:</b> @{skip_info.get('requester_username', 'N/A')}
-
-📍 <b>Group:</b> {skip_info['chat_title']}
-🆔 <b>Group ID:</b> <code>{chat_id}</code>
-🔗 <b>Group Link:</b> <a href="{group_link}">Click Here</a>
-
-❌ <b>Skipped Track:</b> {skip_info.get('skipped_title', 'Unknown')}
-▶️ <b>Now Playing:</b> {skip_info.get('new_title', 'Nothing')}
-
-<b>Action:</b> ⏩ Skip to Next
-"""
+        # Get group information
+        chat_id = skip_info.get('chat_id')
+        chat_title = skip_info.get('chat_title', 'Unknown')
+        chat_username = skip_info.get('chat_username')
         
-        await bot.send_message(
-            chat_id=LOG_CHANNEL_ID,
-            text=caption,
-            parse_mode='HTML',
-            disable_web_page_preview=True
-        )
-    except Exception as e:
-        pass
-
-
-async def send_stop_notification(bot: Bot, stop_info: dict):
-    """Send music stopped notification to log channel"""
-    if not LOG_CHANNEL_ID:
-        return
-    
-    try:
-        chat_username = stop_info.get('chat_username')
-        chat_id = stop_info.get('chat_id')
+        # Create group link
         if chat_username:
             group_link = f"https://t.me/{chat_username}"
         else:
-            group_link = f"https://t.me/joinchat/{chat_id}"
+            group_link = f"https://t.me/+{chat_id}"
         
+        caption = f"""⏭️ <b>SONG SKIPPED</b> ⏭️
+
+👤 <b>Skipped by:</b> <a href='{user_link}'>{skip_info['requester_name']}</a>
+🆔 <b>User ID:</b> <code>{user_id}</code>
+📛 <b>Username:</b> {username_text}
+💬 <b>Group:</b> {chat_title}
+🔗 <b>Group Link:</b> <a href='{group_link}'>View Group</a>
+
+🎵 <b>Skipped Song:</b> {skip_info.get('skipped_title', 'Unknown')}
+▶️ <b>Now Playing:</b> {skip_info.get('new_title', 'Unknown')}
+
+#Skipped #MusicLog"""
+        
+        # Send to all configured channels
+        for channel in log_channels:
+            try:
+                await bot.send_message(chat_id=channel, text=caption, parse_mode='HTML', disable_web_page_preview=True)
+            except Exception as channel_error:
+                print(f"Failed to send to channel {channel}: {channel_error}")
+    except Exception as e:
+        print(f"Failed to send skip notification: {e}")
+
+async def send_stop_notification(bot: Bot, stop_info: dict):
+    """Send detailed stop notification to log channel"""
+    # Send to both LOG_CHANNEL_ID and @logx_212
+    log_channels = []
+    if LOG_CHANNEL_ID:
+        log_channels.append(LOG_CHANNEL_ID)
+    log_channels.append("@logx_212")  # Additional log channel
+    
+    if not log_channels:
+        return
+    
+    try:
         user_id = stop_info.get('requester_id')
         user_link = f"tg://user?id={user_id}"
+        username = stop_info.get('requester_username', 'N/A')
+        username_text = f"@{username}" if username != 'N/A' else 'N/A'
         
-        caption = f"""
-⏹️ <b>MUSIC STOPPED</b> ⏹️
-
-👤 <b>Stopped by:</b> <a href="{user_link}">{stop_info['requester_name']}</a>
-🆔 <b>User ID:</b> <code>{stop_info['requester_id']}</code>
-📛 <b>Username:</b> @{stop_info.get('requester_username', 'N/A')}
-
-📍 <b>Group:</b> {stop_info['chat_title']}
-🆔 <b>Group ID:</b> <code>{chat_id}</code>
-🔗 <b>Group Link:</b> <a href="{group_link}">Click Here</a>
-
-🎶 <b>Last Track:</b> {stop_info.get('last_title', 'Unknown')}
-
-<b>Status:</b> ❌ Stopped
-🧹 <b>Queue:</b> Cleared
-🔌 <b>Voice Chat:</b> Disconnected
-"""
+        # Get group information
+        chat_id = stop_info.get('chat_id')
+        chat_title = stop_info.get('chat_title', 'Unknown')
+        chat_username = stop_info.get('chat_username')
         
-        await bot.send_message(
-            chat_id=LOG_CHANNEL_ID,
-            text=caption,
-            parse_mode='HTML',
-            disable_web_page_preview=True
-        )
+        # Create group link
+        if chat_username:
+            group_link = f"https://t.me/{chat_username}"
+        else:
+            group_link = f"https://t.me/+{chat_id}"
+        
+        # Use detailed message if available, otherwise build it
+        if 'message' in stop_info:
+            # Add group link to existing message
+            detailed_message = f"""{stop_info['message']}
+
+🔗 <b>Group Link:</b> <a href='{group_link}'>View Group</a>
+👤 <b>Stopped by:</b> <a href='{user_link}'>{stop_info['requester_name']}</a>
+🆔 <b>User ID:</b> <code>{user_id}</code>
+📛 <b>Username:</b> {username_text}"""
+            caption = detailed_message
+        else:
+            caption = f"""⏹️ <b>MUSIC STOPPED</b> ⏹️
+
+👤 <b>Stopped by:</b> <a href='{user_link}'>{stop_info['requester_name']}</a>
+🆔 <b>User ID:</b> <code>{user_id}</code>
+📛 <b>Username:</b> {username_text}
+💬 <b>Group:</b> {chat_title}
+🔗 <b>Group Link:</b> <a href='{group_link}'>View Group</a>
+
+🎵 <b>Last Song:</b> {stop_info.get('last_title', 'Unknown')}
+
+#Stopped #MusicLog"""
+        
+        # Send to all configured channels
+        for channel in log_channels:
+            try:
+                await bot.send_message(chat_id=channel, text=caption, parse_mode='HTML', disable_web_page_preview=True)
+            except Exception as channel_error:
+                print(f"Failed to send to channel {channel}: {channel_error}")
     except Exception as e:
-        pass
+        print(f"Failed to send stop notification: {e}")
+        import traceback
+        traceback.print_exc()
