@@ -25,7 +25,7 @@ setup_logging(bot)
 
 print("📦 Loading plugins...")
 # Import all plugin handlers
-from GodVCMusicBot.plugins import start, play, vplay, ping, stop, skip, player_controls, queue_cmd, promo, settings
+from plugins import start, play, vplay, ping, stop, skip, player_controls, queue_cmd, promo, settings, debug, clearqueue
 
 # Include routers in dispatcher
 dp.include_router(start.router)
@@ -38,6 +38,8 @@ dp.include_router(player_controls.router)
 dp.include_router(queue_cmd.router)
 dp.include_router(promo.router)
 dp.include_router(settings.router)
+dp.include_router(debug.router)
+dp.include_router(clearqueue.router)
 
 print("✅ Plugins loaded\n")
 
