@@ -44,33 +44,6 @@ async def skip_cmd(message: types.Message):
             await message.answer("❌ No song is currently playing.")
             return
     
-    # Show skip animation
-    frames = [
-        "𝑺𝒌𝒊𝒑𝒑𝒊𝒏𝒈 𝑻𝒓𝒂𝒄𝒌\n\n▱▱▱▱▱▱▱▱▱",
-        "𝑺𝒌𝒊𝒑𝒑𝒊𝒏𝒈 𝑻𝒓𝒂𝒄𝒌\n\n▰▱▱▱▱▱▱▱▱",
-        "𝑺𝒌𝒊𝒑𝒑𝒊𝒏𝒈 𝑻𝒓𝒂𝒄𝒌\n\n▰▰▱▱▱▱▱▱▱",
-        "𝑺𝒌𝒊𝒑𝒑𝒊𝒏𝒈 𝑻𝒓𝒂𝒄𝒌\n\n▰▰▰▱▱▱▱▱▱",
-        "𝑺𝒌𝒊𝒑𝒑𝒊𝒏𝒈 𝑻𝒓𝒂𝒄𝒌\n\n▰▰▰▰▱▱▱▱▱",
-        "𝑺𝒌𝒊𝒑𝒑𝒊𝒏𝒈 𝑻𝒓𝒂𝒄𝒌\n\n▰▰▰▰▰▱▱▱▱",
-        "𝑺𝒌𝒊𝒑𝒑𝒊𝒏𝒈 𝑻𝒓𝒂𝒄𝒌\n\n▰▰▰▰▰▰▱▱▱",
-        "𝑺𝒌𝒊𝒑𝒑𝒊𝒏𝒈 𝑻𝒓𝒂𝒄𝒌\n\n▰▰▰▰▰▰▰▱▱",
-        "𝑺𝒌𝒊𝒑𝒑𝒊𝒏𝒈 𝑻𝒓𝒂𝒄𝒌\n\n▰▰▰▰▰▰▰▰▱",
-        "𝑺𝒌𝒊𝒑𝒑𝒊𝒏𝒈 𝑻𝒓𝒂𝒄𝒌\n\n▰▰▰▰▰▰▰▰▰",
-        "🎶 𝙡𝙤𝙖𝙙𝙞𝙣𝙜 𝙣𝙚𝙭𝙩 𝙨𝙤𝙣𝙜"
-    ]
-    
-    skip_msg = await message.answer(frames[0])
-    for i, frame in enumerate(frames[1:], 1):
-        try:
-            await asyncio.sleep(0.35)
-            await skip_msg.edit_text(frame)
-        except Exception as e:
-            if "FLOOD_WAIT" in str(e):
-                wait_time = int(str(e).split("_X] - A wait of ")[1].split(" seconds")[0]) if "_X] - A wait of " in str(e) else 5
-                await asyncio.sleep(wait_time + 1)
-                await skip_msg.edit_text(frame)
-            pass
-    
     # Get current playing song (to be skipped)
     current_q = get_queue(chat_id)
     current_song = current_q[0] if len(current_q) > 0 else None
@@ -82,7 +55,7 @@ async def skip_cmd(message: types.Message):
     
     await skip_next(chat_id)
     
-    # Send skip notification to log channel
+    # Send skip notification to log channel immediately
     skip_info = {
         "requester_name": message.from_user.first_name,
         "requester_id": message.from_user.id,
