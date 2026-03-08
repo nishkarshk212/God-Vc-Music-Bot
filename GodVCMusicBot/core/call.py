@@ -1,10 +1,12 @@
 import os
+import asyncio
 from assistant import call_py, assistant
-from core.queue import pop_song
+from core.queue import pop_song, get_queue, clear_queue
 from pytgcalls.types.stream import MediaStream
 from pytgcalls.types.stream import AudioQuality
 
 active_chats = {}
+vc_monitor_tasks = {}  # Track monitoring tasks per chat
 
 def is_playing(chat_id):
     return chat_id in active_chats
@@ -46,6 +48,9 @@ async def start_playback(chat_id):
                 await call_py.play(chat_id, stream)
                 active_chats[chat_id] = True
                 print(f"✅ SUCCESS: Started playing: {next_item['title']} in chat {chat_id}")
+                
+                # Start VC monitor to auto-stop if empty
+                await start_vc_monitor(chat_id)
             except Exception as e:
                 print(f"❌ ERROR starting playback: {type(e).__name__}: {e}")
                 import traceback
@@ -104,6 +109,9 @@ async def resume(chat_id):
     await call_py.resume_stream(chat_id)
 
 async def stop(chat_id):
+    # Stop VC monitor if running
+    stop_vc_monitor(chat_id)
+    
     try:
         await call_py.leave_group_call(chat_id)
     except Exception as e:
@@ -111,9 +119,97 @@ async def stop(chat_id):
     active_chats.pop(chat_id, None)
 
 async def skip_next(chat_id):
+    # Stop VC monitor before skipping
+    stop_vc_monitor(chat_id)
+    
     next_item = pop_song(chat_id)
     if next_item:
         if next_item.get("is_video"):
             await change_stream_video(chat_id, next_item["url"])
         else:
             await change_stream(chat_id, next_item["url"])
+        
+        # Restart monitor for new song
+        await start_vc_monitor(chat_id)
+
+async def start_vc_monitor(chat_id):
+    """Start monitoring voice chat for participants - auto-stop if empty for 30 seconds"""
+    print(f"🔍 Starting VC monitor for chat {chat_id}")
+    
+    # Cancel existing monitor if any
+    stop_vc_monitor(chat_id)
+    
+    # Create new monitor task
+    vc_monitor_tasks[chat_id] = asyncio.create_task(vc_participant_monitor(chat_id))
+    print(f"✅ VC monitor started for chat {chat_id}")
+
+def stop_vc_monitor(chat_id):
+    """Stop the VC monitor for a specific chat"""
+    if chat_id in vc_monitor_tasks:
+        vc_monitor_tasks[chat_id].cancel()
+        del vc_monitor_tasks[chat_id]
+        print(f"⏹️ VC monitor stopped for chat {chat_id}")
+
+async def vc_participant_monitor(chat_id):
+    """Monitor voice chat participants and auto-stop if empty for 30 seconds"""
+    try:
+        empty_count = 0
+        max_empty_checks = 6  # Check every 5 seconds, stop after 30 seconds (6 * 5 = 30)
+        
+        while True:
+            await asyncio.sleep(5)  # Check every 5 seconds
+            
+            # Get current participants
+            try:
+                from assistant import call_py
+                participants = await call_py.get_participants(chat_id)
+                participant_count = len(participants) if participants else 0
+                
+                print(f"👥 VC Monitor - Chat {chat_id}: {participant_count} participants")
+                
+                if participant_count == 0:
+                    empty_count += 1
+                    print(f"⚠️ VC is empty! Count: {empty_count}/{max_empty_checks}")
+                    
+                    if empty_count >= max_empty_checks:
+                        # VC has been empty for 30 seconds - auto-stop
+                        print(f"⏹️ Auto-stopping stream - VC empty for 30 seconds")
+                        
+                        # Send notification to log channel
+                        try:
+                            from aiogram import Bot
+                            from config import BOT_TOKEN
+                            bot = Bot(token=BOT_TOKEN)
+                            
+                            from utils.logger import send_stop_notification
+                            stop_info = {
+                                "requester_name": "Auto-Stop",
+                                "requester_id": 0,
+                                "requester_username": "N/A",
+                                "chat_id": chat_id,
+                                "chat_title": f"Voice Chat (Empty)",
+                                "chat_username": None,
+                                "last_title": "Stream ended - No participants",
+                                "message": f"⏹️ <b>AUTO-STOPPED</b>\n\n💬 Voice chat was empty for 30 seconds.\n🎵 Stream stopped automatically.\n\n#AutoStop"
+                            }
+                            asyncio.create_task(send_stop_notification(bot=bot, stop_info=stop_info))
+                        except Exception as notify_err:
+                            print(f"Failed to send auto-stop notification: {notify_err}")
+                        
+                        # Stop the stream
+                        await stop(chat_id)
+                        print(f"✅ Stream auto-stopped successfully")
+                        break
+                else:
+                    # Reset counter if someone joins
+                    empty_count = 0
+                    
+            except Exception as check_err:
+                print(f"❌ Error checking participants: {check_err}")
+                # If we can't check (e.g., bot left VC), stop monitoring
+                break
+                
+    except asyncio.CancelledError:
+        print(f"✅ VC monitor cancelled for chat {chat_id}")
+    except Exception as e:
+        print(f"❌ VC monitor error: {e}")
