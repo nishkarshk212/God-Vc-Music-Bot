@@ -2,7 +2,7 @@ from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
 from aiogram.exceptions import TelegramRetryAfter
-from core.call import skip_next, active_chats
+from core.call import skip_next, active_chats, get_current_playing
 from core.queue import get_queue
 from utils.thumbnail import generate_thumb
 from utils.progress import build_keyboard, format_duration, start_slider
@@ -29,24 +29,21 @@ async def skip_cmd(message: types.Message):
         await message.answer("❌ Only administrators can use /skip command in this group.")
         return
     
+    # Get currently playing song
+    current_song = get_current_playing(chat_id)
+    
     if skip_mode == "requester_only":
         # Check if user requested the current playing song
-        from core.queue import get_queue
-        q = get_queue(chat_id)
-        current_song = q[0] if len(q) > 0 else None
-        
         if current_song and isinstance(current_song, dict):
             requester_id = current_song.get('requester_id')
             if requester_id != user_id and not is_admin:
                 await message.answer("❌ Only the person who requested this song can skip it.")
                 return
-        else:
+        elif not current_song:
             await message.answer("❌ No song is currently playing.")
             return
     
-    # Get current playing song (to be skipped)
-    current_q = get_queue(chat_id)
-    current_song = current_q[0] if len(current_q) > 0 else None
+    # Get current playing title for logging
     skipped_title = current_song.get("title", "Unknown") if current_song and isinstance(current_song, dict) else "Unknown"
     
     # Get next song from queue BEFORE skipping
@@ -80,7 +77,7 @@ async def skip_cmd(message: types.Message):
         
         # Build caption and controls
         duration_str = format_duration(duration_value)
-        header = "#𝟊єєℓ_𝚻нє_𝚸𝐨ω𝐞𝗿_𝐎ƒ_𝚳𝐮sî𝗰"
+        header = "#𝟊єєℓ_𝚻нє_𝚸𝐨ω𝐞𝗿_𝐎𝐟_𝚳𝐮sî𝗰"
         lines = f"✯ 𝐓ɩttɭ𝛆 »   {title}\n✬ 𝐃ʋɽɑʈɩσŋ »  {duration_str}\n✭ 𝐁ɣ »  {requester}"
         caption = f"{header}\n{lines}"
         buttons = build_keyboard(0, duration_value or 0)
@@ -105,20 +102,13 @@ async def skip_cmd(message: types.Message):
             except:
                 pass
         except Exception as e:
-            if "FLOOD_WAIT" in str(e):
-                await asyncio.sleep(12)
-                photo_file = FSInputFile(thumb_path)
-                msg = await message.answer_photo(photo=photo_file, caption=caption, reply_markup=buttons)
-                try:
-                    os.remove(thumb_path)
-                except:
-                    pass
-            else:
-                raise
+            print(f"Error sending skip message: {e}")
+            # Final fallback
+            msg = await message.answer(caption, reply_markup=buttons)
         
         # Start progress slider
         if duration_value:
             prefix = f"{header}\n{lines}"
             asyncio.create_task(start_slider(message.bot, chat_id, msg.message_id, duration_value, prefix=prefix))
     else:
-        await message.answer("Queue is empty! Nothing to skip to.")
+        await message.answer("⏭️ **Skipped track.** No more songs in queue.")

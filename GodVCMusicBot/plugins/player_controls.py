@@ -4,6 +4,7 @@ from core.call import pause, resume, stop, skip_next
 from core.queue import get_queue
 from utils.thumbnail import generate_thumb
 from utils.progress import pause_slider, resume_slider, stop_slider, seek_slider, reset_slider, build_keyboard, format_duration, start_slider, SLIDERS
+from utils.settings import get_chat_settings
 import asyncio
 import os
 
@@ -12,6 +13,30 @@ router = Router()
 @router.callback_query()
 async def controls(callback_query: types.CallbackQuery):
     chat_id = callback_query.message.chat.id if callback_query.message else None
+    
+    # Handle settings button separately
+    if callback_query.data == "settings":
+        from plugins.settings import build_settings_keyboard
+        settings = get_chat_settings(chat_id) if chat_id else {}
+        
+        settings_text = f"""
+⚙️ **Bot Settings** 🎵
+
+📍 **Chat:** {callback_query.message.chat.title}
+
+**Current Configuration:**
+🎶 Play: {settings.get('play_mode', 'everyone').replace('_', ' ').title()}
+⏭️ Skip: {settings.get('skip_mode', 'everyone').replace('_', ' ').title()}
+⏹️ Stop: {settings.get('stop_mode', 'everyone').replace('_', ' ').title()}
+📊 Queue: {'Unlimited' if settings.get('queue_limit', 0) == 0 else settings.get('queue_limit', 0)}
+🔄 Auto Skip: {'✅ ON' if settings.get('auto_skip', False) else '❌ OFF'}
+📢 Logs: {'✅ ON' if settings.get('log_actions', False) else '❌ OFF'}
+"""
+        keyboard = build_settings_keyboard(chat_id)
+        await callback_query.message.edit_text(settings_text, reply_markup=keyboard, parse_mode='Markdown')
+        await callback_query.answer()
+        return
+    
     if callback_query.data in ("pause",) and chat_id:
         await pause(chat_id)
         await callback_query.answer("⏸ Paused")
@@ -44,7 +69,7 @@ async def controls(callback_query: types.CallbackQuery):
             
             # Build caption and controls
             duration_str = format_duration(duration_value)
-            header = "#𝟊єєℓ_𝚻нє_𝚸𝐨ω𝐞𝗿_𝐎ƒ_𝚳𝐮sî𝗰"
+            header = "#𝟊єєℓ_𝚻нє_𝚸𝐨ω𝐞𝗿_𝐎𝐟_𝚳𝐮sî𝗰"
             lines = f"✯ 𝐓ɩttɭ𝛆 »   {title}\n✬ 𝐃ʋɽɑʈɩσŋ »  {duration_str}\n✭ 𝐁ɣ »  {requester}"
             caption = f"{header}\n{lines}"
             buttons = build_keyboard(0, duration_value or 0)
@@ -85,7 +110,7 @@ async def controls(callback_query: types.CallbackQuery):
         if callback_query.message:
             stop_slider(chat_id, callback_query.message.message_id)
         user = callback_query.from_user.first_name if callback_query.from_user else "Unknown"
-        text = f"➻ sᴛʀᴇᴀᴍ ᴇɴᴅᴇᴅ/sᴛᴏᴩᴩᴇᴅ 🎄\n│\n└ʙʏ : {user} 🥀"
+        text = f"➻ sᴛᴇᴀᴍ ᴇɴᴅᴇᴅ/sᴛᴏᴩᴩᴇᴅ 🎄\n│\n└ʙʏ : {user} 🥀"
         keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="✕ Close", callback_data="close")]])
         await callback_query.bot.send_message(chat_id, text, reply_markup=keyboard)
     elif callback_query.data == "seek_fwd_10" and chat_id and callback_query.message:
