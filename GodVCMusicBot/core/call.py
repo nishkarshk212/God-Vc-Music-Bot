@@ -110,6 +110,9 @@ async def start_playback_video(chat_id):
     await start_playback(chat_id, is_video=True)
 
 async def change_stream(chat_id, stream_url):
+    """Change the stream for a chat (used during skip)"""
+    from bot import call_py
+    
     # Use the same robust parameters that work for video
     is_url = stream_url.startswith(("http://", "https://"))
     ffmpeg_args = (
@@ -126,6 +129,14 @@ async def change_stream(chat_id, stream_url):
         ffmpeg_parameters=ffmpeg_args
     )
     await call_py.play(chat_id, stream)
+    
+    # Force unmute after stream change (fixes no sound after skip)
+    await asyncio.sleep(1.5)
+    try:
+        await call_py.unmute(chat_id)
+        print(f"✅ Unmuted after stream change in chat {chat_id}")
+    except Exception as e:
+        print(f"⚠️ Failed to unmute: {e}")
 
 async def pause(chat_id):
     await call_py.pause_stream(chat_id)
@@ -193,8 +204,11 @@ async def stop(chat_id):
     print(f"⏹️ Playback stopped and queue cleared for chat {chat_id}")
 
 async def change_stream_video(chat_id, stream_url):
-    # Use STUDIO quality and HD_720P for video stream changes
+    """Change the video stream for a chat (used during skip)"""
+    from bot import call_py
     from pytgcalls.types.stream import VideoQuality
+    
+    # Use STUDIO quality and HD_720P for video stream changes
     is_url = stream_url.startswith(("http://", "https://"))
     ffmpeg_args = (
         "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10 " if is_url else ""
@@ -211,6 +225,14 @@ async def change_stream_video(chat_id, stream_url):
         ffmpeg_parameters=ffmpeg_args
     )
     await call_py.play(chat_id, stream)
+    
+    # Force unmute after stream change (fixes no sound after skip)
+    await asyncio.sleep(1.5)
+    try:
+        await call_py.unmute(chat_id)
+        print(f"✅ Unmuted after video stream change in chat {chat_id}")
+    except Exception as e:
+        print(f"⚠️ Failed to unmute: {e}")
 
 async def skip_next(chat_id):
     # Stop VC monitor before skipping
