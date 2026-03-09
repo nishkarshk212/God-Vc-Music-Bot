@@ -1,0 +1,65 @@
+═══════════════════════════════════════════════════════════
+🚀 DEPLOY YOUR BOT NOW - COPY & PASTE THESE COMMANDS
+═══════════════════════════════════════════════════════════
+
+STEP 1: Connect to your server
+────────────────────────────────
+ssh root@45.143.228.160
+
+
+STEP 2: Run these commands on the server
+────────────────────────────────────────────────────────────
+cd ~/GodVCMusicBot
+git pull origin main
+source venv/bin/activate
+pip install -r requirements.txt --upgrade
+systemctl restart godvcbot
+sleep 3
+systemctl status godvcbot --no-pager
+────────────────────────────────────────────────────────────
+
+
+STEP 3: Test in Telegram
+────────────────────────────────
+Send: /play never gonna give you up
+Expected: Clear audio with good volume! ✅
+
+
+═══════════════════════════════════════════════════════════
+✅ WHAT'S BEING DEPLOYED:
+═══════════════════════════════════════════════════════════
+• Sound Fix (commit 55fe078)
+• Simplified ffmpeg parameters
+• Volume boost: 1.5x
+• Audio quality: 48kHz, stereo
+• No codec conflicts
+• Robust unmute logic
+
+
+═══════════════════════════════════════════════════════════
+📊 GIT STATUS:
+═══════════════════════════════════════════════════════════
+• Repository: Updated ✅
+• Commit: ba9e7d5 (includes sound fix)
+• Clean: No secrets/cookies exposed ✅
+• Ready to deploy: YES ✅
+
+
+═══════════════════════════════════════════════════════════
+🔧 TROUBLESHOOTING:
+═══════════════════════════════════════════════════════════
+If SSH fails:
+• Check if server is online
+• Try: ping 45.143.228.160
+• Verify firewall allows port 22
+
+If bot doesn't start:
+• journalctl -u godvcbot -f
+• systemctl restart godvcbot
+
+If still no sound:
+• Verify commit deployed: git log --oneline -1
+• Should show: ba9e7d5 or newer
+• Check unmute logs: journalctl -u godvcbot | grep unmute
+
+═══════════════════════════════════════════════════════════
