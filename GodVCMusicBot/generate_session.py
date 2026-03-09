@@ -1,33 +1,39 @@
-from pyrogram import Client
-from pyrogram.errors import SessionPasswordNeeded
-import os
-from pathlib import Path
-from dotenv import load_dotenv
-env_path = Path(__file__).with_name(".env")
-load_dotenv(dotenv_path=env_path)
 
-API_ID = int(os.getenv("API_ID", "0"))
-API_HASH = os.getenv("API_HASH", "")
+import asyncio
+from hydrogram import Client
 
-def main():
-    if not API_ID or not API_HASH:
-        raise RuntimeError("Missing API_ID/API_HASH in .env")
-    app = Client("assistant", api_id=API_ID, api_hash=API_HASH)
-    app.connect()
-    phone = input("Phone number (with country code): ").strip()
-    sent = app.send_code(phone)
-    code = input("Login code: ").strip()
+async def main():
+    print("--------------------------------------------------")
+    print("Hydrogram Session String Generator")
+    print("--------------------------------------------------")
+    
+    # Prompt for API credentials
     try:
-        app.sign_in(
-            phone_number=phone,
-            phone_code=code,
-            phone_code_hash=sent.phone_code_hash,
-        )
-    except SessionPasswordNeeded:
-        pw = input("Two-step verification password: ").strip()
-        app.check_password(pw)
-    print(app.export_session_string())
-    app.disconnect()
+        api_id = int(input("Enter your API ID: "))
+        api_hash = input("Enter your API HASH: ")
+    except ValueError:
+        print("Error: API ID must be an integer.")
+        return
+
+    # Initialize client
+    # Using :memory: storage to avoid creating a .session file
+    async with Client(":memory:", api_id=api_id, api_hash=api_hash) as app:
+        print("\n--------------------------------------------------")
+        print("Client created. You will now be prompted to log in.")
+        print("Enter your phone number, the code Telegram sends you, and your 2FA password if enabled.")
+        print("--------------------------------------------------\n")
+        
+        # Export session string
+        session_string = await app.export_session_string()
+        
+        print("--------------------------------------------------")
+        print("✅ Success! Here is your session string:")
+        print("--------------------------------------------------\n")
+        print(session_string)
+        print("\n--------------------------------------------------")
+        print("IMPORTANT: Copy this string and store it securely.")
+        print("Do not share it with anyone.")
+        print("--------------------------------------------------")
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

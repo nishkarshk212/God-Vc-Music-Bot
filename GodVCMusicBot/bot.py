@@ -1,13 +1,15 @@
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from config import API_ID, API_HASH, BOT_TOKEN, LOG_CHANNEL_ID
+from config import API_ID, API_HASH, BOT_TOKEN, LOG_CHANNEL_ID, SESSION_STRING
 import asyncio
 from pathlib import Path
 import sys
 import logging
 import nest_asyncio
 import traceback
+from hydrogram import Client
+from pytgcalls import PyTgCalls
 
 # Allow nested event loops (required for PyTgCalls + aiogram)
 nest_asyncio.apply()
@@ -19,13 +21,24 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
+# Initialize the assistant (user bot)
+assistant = Client(
+    "assistant",
+    api_id=API_ID,
+    api_hash=API_HASH,
+    session_string=SESSION_STRING,
+)
+
+# Initialize PyTgCalls
+call_py = PyTgCalls(assistant)
+
 # Setup logging to send to Telegram channel
 from utils.logger import setup_logging
 setup_logging(bot)
 
 print("📦 Loading plugins...")
 # Import all plugin handlers
-from plugins import start, play, vplay, ping, stop, skip, player_controls, queue_cmd, promo, settings, debug, clearqueue
+from plugins import start, play, vplay, ping, stop, skip, player_controls, queue_cmd, promo, settings
 
 # Include routers in dispatcher
 dp.include_router(start.router)
@@ -38,113 +51,43 @@ dp.include_router(player_controls.router)
 dp.include_router(queue_cmd.router)
 dp.include_router(promo.router)
 dp.include_router(settings.router)
-dp.include_router(debug.router)
-dp.include_router(clearqueue.router)
 
 print("✅ Plugins loaded\n")
 
-if __name__ == "__main__":
-    async def on_startup(dispatcher):
-        """Called when bot starts"""
-        print("\n🔄 Starting bot components...")
-        
-        # Import assistant here (after event loop is created)
-        from assistant import assistant, call_py
-        
-        # Start assistant and PyTgCalls FIRST (before aiogram polling)
-        print("📞 Starting assistant...")
-        await assistant.start()
-        print("✅ Assistant started")
-        
-        print("🎵 Starting PyTgCalls...")
-        await call_py.start()
-        print("✅ PyTgCalls started")
-        
-        # Initialize auto-maintenance system
-        from utils.auto_maintenance import init_maintenance, start_maintenance
-        maintenance_instance = init_maintenance(bot)
-        
-        bot_info = await bot.get_me()
-        print(f"\n{'='*50}")
-        print(f"✅ Bot started successfully!")
-        print(f"🤖 Name: {bot_info.first_name}")
-        print(f"🆔 ID: {bot_info.id}")
-        print(f"📛 Username: @{bot_info.username}")
-        print(f"{'='*50}\n")
-        print("🎵 Bot is ready! Send /play <song> to test.\n")
-        
-        # Start auto-maintenance loop in background
-        print("🔧 Starting auto-maintenance system...")
-        asyncio.create_task(start_maintenance())
-        print("✅ Auto-maintenance activated\n")
-    
-    async def on_shutdown(dispatcher):
-        """Called when bot stops"""
-        print("\n🔄 Stopping bot...")
-        from assistant import assistant, call_py
-        
-        await bot.session.close()
-        try:
-            await assistant.stop()
-            call_py.stop()
-        except:
-            pass
-        print("✅ Bot stopped cleanly")
-    
-    # Register startup/shutdown handlers
-    dp.startup.register(on_startup)
-    dp.shutdown.register(on_shutdown)
-    
-    # Run polling with crash recovery
-    async def run_with_recovery():
-        """Run bot with automatic crash recovery"""
-        while True:
-            try:
-                await dp.start_polling(bot)
-                break  # If polling stops normally, exit loop
-            except Exception as e:
-                print(f"\n{'='*50}")
-                print(f"❌ BOT CRASH DETECTED!")
-                print(f"Error: {type(e).__name__}: {str(e)}")
-                print(f"{'='*50}\n")
-                
-                # Log crash to channel
-                try:
-                    error_details = traceback.format_exc()
-                    crash_msg = f"""
-🚨 <b>CRASH RECOVERY ACTIVATED</b> 🚨
+async def main():
+    """Initializes and runs the bot."""
+    print("\n🔄 Starting bot components...")
 
-❌ <b>Error:</b> <code>{type(e).__name__}</code>
-📝 <b>Details:</b> <code>{str(e)}</code>
+    # Start the assistant and PyTgCalls
+    print("📞 Starting assistant...")
+    await assistant.start()
+    print("✅ Assistant started.")
 
-<b>Stack Trace:</b>
-<code>{error_details[:3000]}</code>
+    print("🎵 Starting PyTgCalls...")
+    await call_py.start()
+    print("✅ PyTgCalls started.")
 
-🔧 Attempting automatic recovery...
-"""
-                    await bot.send_message(
-                        chat_id=LOG_CHANNEL_ID,
-                        text=crash_msg,
-                        parse_mode='HTML'
-                    )
-                except:
-                    pass
-                
-                # Perform crash recovery
-                from utils.auto_maintenance import init_maintenance
-                maintenance_instance = init_maintenance(bot)
-                if maintenance_instance:
-                    await maintenance_instance.crash_recovery(e)
-                
-                # Wait a moment before restarting
-                print("⏳ Waiting 5 seconds before restart...")
-                await asyncio.sleep(5)
-                
-                # Try to restart polling
-                print("🔄 Restarting bot polling...\n")
-    
-    # Run the bot with crash recovery
+    # Get and print bot info
+    bot_info = await bot.get_me()
+    print(f"\n{'='*50}")
+    print(f"✅ Bot started successfully!")
+    print(f"🤖 Name: {bot_info.first_name}")
+    print(f"🆔 ID: {bot_info.id}")
+    print(f"📛 Username: @{bot_info.username}")
+    print(f"{'='*50}\n")
+    print("🎵 Bot is ready! Send /play <song> to test.\n")
+
     try:
-        asyncio.run(run_with_recovery())
-    except KeyboardInterrupt:
-        print("\n👋 Bot stopped by user")
+        await dp.start_polling(bot)
+    finally:
+        print("\n🔄 Stopping bot...")
+        await bot.session.close()
+        await call_py.stop()
+        await assistant.stop()
+        print("✅ Bot stopped cleanly.")
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        print("\n👋 Bot stopped by user.")
