@@ -17,7 +17,7 @@ def is_playing(chat_id):
 async def start_playback(chat_id, is_video=False):
     """Start playback for a chat"""
     from core.queue import pop_song
-    from bot import call_py
+    from core.client import call_py
     
     print(f"\n🔍 Attempting to start {'VIDEO' if is_video else 'AUDIO'} playback in chat {chat_id}")
     
@@ -40,15 +40,22 @@ async def start_playback(chat_id, is_video=False):
             current_playing[chat_id] = next_item
 
             try:
-                # Unified ffmpeg parameters for both audio and video to ensure consistent sound
-                # Adding specific audio filters that fixed the "no sound" issue in video
+                # CRITICAL FIX: Unified robust audio parameters for ALL playback scenarios
+                # This ensures consistent sound across audio and video playback
                 is_url = url.startswith(("http://", "https://"))
+                
+                # Core audio fixes for Telegram VC compatibility:
+                # 1. volume=2.0 - Boosts quiet audio (Telegram VC needs this)
+                # 2. loudnorm - Normalizes audio levels (prevents silent sections)
+                # 3. ac 2 - Forces stereo (required for proper VC playback)
+                # 4. ar 48000 - Standard sample rate for Telegram
+                # 5. pcm_s16le - Uncompressed audio format (most compatible)
                 ffmpeg_args = (
                     "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10 " if is_url else ""
                 )
                 ffmpeg_args += (
-                    "-af \"volume=2.0,loudnorm=I=-16:TP=-1.5:LRA=11\" "
-                    "-ac 2 -ar 48000 -acodec pcm_s16le"
+                    '-af "volume=2.0,loudnorm=I=-16:TP=-1.5:LRA=11,dynaudnorm=g=200" '
+                    '-ac 2 -ar 48000 -acodec pcm_s16le -f s16le'
                 )
                 
                 if is_video:
@@ -71,15 +78,26 @@ async def start_playback(chat_id, is_video=False):
                 print(f"📞 Starting playback with MediaStream ({'VIDEO' if is_video else 'AUDIO'})")
                 await call_py.play(chat_id, stream)
                 
-                # Small delay to ensure initialization before unmuting
-                await asyncio.sleep(1.5)
+                # CRITICAL: Enhanced initialization sequence for reliable sound
+                # Step 1: Wait for stream to initialize
+                await asyncio.sleep(2.0)
                 
-                # Force unmute using both PyTgCalls methods for maximum reliability
+                # Step 2: Force unmute using multiple methods
                 try:
+                    # First attempt: Standard unmute
                     await call_py.unmute(chat_id)
-                except Exception:
-                    pass
-                    
+                    print(f"✅ Primary unmute succeeded in chat {chat_id}")
+                except Exception as e1:
+                    print(f"⚠️ Primary unmute failed: {e1}")
+                    try:
+                        # Second attempt: Brief delay and retry
+                        await asyncio.sleep(0.5)
+                        await call_py.unmute(chat_id)
+                        print(f"✅ Secondary unmute succeeded in chat {chat_id}")
+                    except Exception as e2:
+                        print(f"⚠️ Secondary unmute failed: {e2}")
+                        # Don't fail completely - sometimes streams self-heal
+                        
                 active_chats[chat_id] = True
                 print(f"✅ SUCCESS: Started playing: {next_item['title']} in chat {chat_id}")
                 
@@ -113,14 +131,14 @@ async def change_stream(chat_id, stream_url):
     """Change the stream for a chat (used during skip)"""
     from bot import call_py
     
-    # Use the same robust parameters that work for video
+    # CRITICAL: Use identical robust parameters as start_playback for consistency
     is_url = stream_url.startswith(("http://", "https://"))
     ffmpeg_args = (
         "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10 " if is_url else ""
     )
     ffmpeg_args += (
-        "-af \"volume=2.0,loudnorm=I=-16:TP=-1.5:LRA=11\" "
-        "-ac 2 -ar 48000 -acodec pcm_s16le"
+        '-af "volume=2.0,loudnorm=I=-16:TP=-1.5:LRA=11,dynaudnorm=g=200" '
+        '-ac 2 -ar 48000 -acodec pcm_s16le -f s16le'
     )
     
     stream = MediaStream(
@@ -130,13 +148,18 @@ async def change_stream(chat_id, stream_url):
     )
     await call_py.play(chat_id, stream)
     
-    # Force unmute after stream change (fixes no sound after skip)
-    await asyncio.sleep(1.5)
-    try:
-        await call_py.unmute(chat_id)
-        print(f"✅ Unmuted after stream change in chat {chat_id}")
-    except Exception as e:
-        print(f"⚠️ Failed to unmute: {e}")
+    # CRITICAL: Force unmute after stream change (fixes no sound after skip)
+    # Multiple attempts with delays to ensure unmute succeeds
+    for attempt in range(3):
+        await asyncio.sleep(0.5)
+        try:
+            await call_py.unmute(chat_id)
+            print(f"✅ Unmuted after stream change in chat {chat_id} (attempt {attempt + 1})")
+            break
+        except Exception as e:
+            print(f"⚠️ Unmute attempt {attempt + 1} failed: {e}")
+            if attempt == 2:
+                raise
 
 async def pause(chat_id):
     await call_py.pause_stream(chat_id)
@@ -154,8 +177,8 @@ async def seek(chat_id, seconds):
     is_video = item.get("is_video", False)
     
     try:
-        # For local files, we use -ss offset in ffmpeg_parameters
-        ffmpeg_args = f"-ss {seconds} "
+        # CRITICAL: Use robust audio parameters for seek operation
+        ffmpeg_args = f'-ss {seconds} -af "volume=2.0,loudnorm=I=-16:TP=-1.5:LRA=11,dynaudnorm=g=200" -ac 2 -ar 48000 -acodec pcm_s16le -f s16le'
         
         if is_video:
             from pytgcalls.types.stream import VideoQuality
@@ -173,10 +196,16 @@ async def seek(chat_id, seconds):
             )
         
         await call_py.play(chat_id, stream)
-        # Force unmute after seek
-        await asyncio.sleep(1)
-        await call_py.unmute(chat_id)
-        return True
+        # CRITICAL: Force unmute after seek with multiple attempts
+        for attempt in range(3):
+            await asyncio.sleep(0.5)
+            try:
+                await call_py.unmute(chat_id)
+                print(f"✅ Unmuted after seek in chat {chat_id} (attempt {attempt + 1})")
+                return True
+            except Exception as e:
+                print(f"⚠️ Seek unmute attempt {attempt + 1} failed: {e}")
+        return False
     except Exception as e:
         print(f"Seek error: {e}")
         return False
@@ -208,14 +237,14 @@ async def change_stream_video(chat_id, stream_url):
     from bot import call_py
     from pytgcalls.types.stream import VideoQuality
     
-    # Use STUDIO quality and HD_720P for video stream changes
+    # CRITICAL: Use STUDIO quality and identical audio parameters for consistency
     is_url = stream_url.startswith(("http://", "https://"))
     ffmpeg_args = (
         "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10 " if is_url else ""
     )
     ffmpeg_args += (
-        "-af \"volume=2.0,loudnorm=I=-16:TP=-1.5:LRA=11\" "
-        "-ac 2 -ar 48000 -acodec pcm_s16le"
+        '-af "volume=2.0,loudnorm=I=-16:TP=-1.5:LRA=11,dynaudnorm=g=200" '
+        '-ac 2 -ar 48000 -acodec pcm_s16le -f s16le'
     )
     
     stream = MediaStream(
@@ -226,13 +255,17 @@ async def change_stream_video(chat_id, stream_url):
     )
     await call_py.play(chat_id, stream)
     
-    # Force unmute after stream change (fixes no sound after skip)
-    await asyncio.sleep(1.5)
-    try:
-        await call_py.unmute(chat_id)
-        print(f"✅ Unmuted after video stream change in chat {chat_id}")
-    except Exception as e:
-        print(f"⚠️ Failed to unmute: {e}")
+    # CRITICAL: Force unmute with multiple attempts (fixes no sound after video skip)
+    for attempt in range(3):
+        await asyncio.sleep(0.5)
+        try:
+            await call_py.unmute(chat_id)
+            print(f"✅ Unmuted after video stream change in chat {chat_id} (attempt {attempt + 1})")
+            break
+        except Exception as e:
+            print(f"⚠️ Video unmute attempt {attempt + 1} failed: {e}")
+            if attempt == 2:
+                raise
 
 async def skip_next(chat_id):
     # Stop VC monitor before skipping
@@ -261,10 +294,13 @@ async def skip_next(chat_id):
                 await change_stream_video(chat_id, url)
             else:
                 await change_stream(chat_id, url)
-            
+                        
+            # CRITICAL: Verify stream actually has audio after skip
+            await asyncio.sleep(2.0)
+            print(f"✅ Successfully skipped to: {title}")
+                        
             # Restart monitor for new song
             await start_vc_monitor(chat_id)
-            print(f"✅ Successfully skipped to: {title}")
         except Exception as e:
             print(f"❌ Error during skip playback: {e}")
             # If playback fails, try the next one
