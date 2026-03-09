@@ -3,7 +3,7 @@ from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
 from aiogram.exceptions import TelegramRetryAfter
 from core.queue import add_to_queue, get_queue
-from core.ytdl import search_youtube, get_available_formats, download_song, get_direct_stream_link
+from core.ytdl import search_youtube, get_available_formats, download_song, get_direct_stream_link, resolve_stream
 from utils.thumbnail import generate_thumb
 from utils.format_selector import build_format_selection_menu, parse_callback_data
 from core.call import start_playback, is_playing
@@ -142,18 +142,6 @@ async def quick_play(message: types.Message, query: str, status_message: types.M
     else:
         status = status_message
     
-    await asyncio.sleep(1)
-    frames = ["🎵 ▰▱▱▱▱ Loading", "🎵 ▰▰▱▱▱ Loading", "🎵 ▰▰▰▱▱ Loading", "🎵 ▰▰▰▰▱ Loading", "🎵 ▰▰▰▰▰ Loading"]
-    for frame in frames:
-        await asyncio.sleep(0.5)
-        try:
-            await status.edit_text(frame)
-        except Exception as e:
-            if "FLOOD_WAIT" in str(e):
-                wait_time = int(str(e).split("_X] - A wait of ")[1].split(" seconds")[0]) if "_X] - A wait of " in str(e) else 5
-                await asyncio.sleep(wait_time + 1)
-                await status.edit_text(frame)
-            pass
     try:
         await status.edit_text("🎧 Connecting to Voice Chat...")
     except Exception as e:
@@ -195,46 +183,44 @@ async def quick_play(message: types.Message, query: str, status_message: types.M
         if not file_path:
             print(f"  → Download failed, trying alternatives...")
             # If download fails, try resolution as fallback
-            if not stream_url and webpage_url:
+            if webpage_url:
                 print(f"  → Trying stream resolution from {webpage_url}...")
-                from core.ytdl import resolve_stream
                 try:
-                    stream_url = await resolve_stream(webpage_url)
-                    file_path = stream_url
-                    print(f"  ✅ Got stream via resolution")
+                    resolved_url = await resolve_stream(webpage_url)
+                    if resolved_url and resolved_url != webpage_url:
+                        file_path = resolved_url
+                        print(f"  ✅ Got stream via resolution")
                 except Exception as resolve_err:
                     print(f"❌ Resolution failed: {resolve_err}")
-                    stream_url = webpage_url
             
-            # Final fallback: use direct URL from search
+            # Final fallback: use direct URL from search ONLY if it looks like a direct link
             if not file_path and stream_url:
-                file_path = stream_url
-                print(f"  → Using direct stream URL")
+                if any(k in stream_url for k in [".googlevideo.com", ".m3u8", ".mp3", ".mp4", "shrutibots.site"]):
+                    file_path = stream_url
+                    print(f"  → Using direct stream URL from search")
 
         if not file_path:
             error_msg = "Could not get a playable file. This might be due to:\n\n"
-            error_msg += "• Geo-restrictions in your region\n"
-            error_msg += "• Age restrictions (add cookies to fix)\n"
-            error_msg += "• Temporary YouTube blocking (try again later)"
+            error_msg += "• YouTube blocking the server (IP Ban)\n"
+            error_msg += "• Video is restricted or unavailable\n"
+            error_msg += "• All extraction strategies failed"
             raise Exception(error_msg)
+
+        # Verify local file one last time if it's a path
+        if not str(file_path).startswith("http"):
+            if not os.path.exists(file_path) or os.path.getsize(file_path) < 1000:
+                print(f"❌ FINAL ERROR: File {file_path} is invalid or missing!")
+                raise Exception("Downloaded file was corrupted or empty.")
 
         print(f"✅ Ready: {title}")
         print(f"🔗 Path/URL: {str(file_path)[:80]}...")
     except Exception as e:
         print(f"❌ ERROR preparing playback: {type(e).__name__}: {e}")
-        import traceback
-        traceback.print_exc()
-        
-        # Show detailed error to user
-        error_text = f"❌ Failed to play the song.\n\n"
-        error_text += f"<b>Error:</b> <code>{str(e)[:300]}</code>\n\n"
-        error_text += f"<b>Tips:</b>\n"
-        error_text += f"• Check if the song name is correct\n"
-        error_text += f"• Try using /playhd for better results\n"
-        error_text += f"• Add YouTube cookies for age-restricted content\n"
-        error_text += f"• Use a proxy if geo-blocked"
-        
-        await status.edit_text(error_text, parse_mode="HTML")
+        # Silent failure - just delete status and return
+        try:
+            await status.delete()
+        except:
+            pass
         return
     
     # Check if already playing BEFORE adding to queue

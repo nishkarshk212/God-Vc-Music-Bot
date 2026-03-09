@@ -1,5 +1,5 @@
 from aiogram import Router, types
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
 from core.call import pause, resume, stop, skip_next
 from core.queue import get_queue
 from utils.thumbnail import generate_thumb
@@ -24,32 +24,6 @@ async def controls(callback_query: types.CallbackQuery):
             resume_slider(chat_id, callback_query.message.message_id)
     elif callback_query.data == "skip" and chat_id:
         await callback_query.answer("⏭ Skipped")
-        
-        # Show skip animation
-        frames = [
-            "⏭ **Skipping Track...**\n\n▱▱▱▱▱▱▱▱▱",
-            "⏭ **Skipping Track...**\n\n▰▱▱▱▱▱▱▱▱",
-            "⏭ **Skipping Track...**\n\n▰▰▱▱▱▱▱▱▱",
-            "⏭ **Skipping Track...**\n\n▰▰▰▱▱▱▱▱▱",
-            "⏭ **Skipping Track...**\n\n▰▰▰▰▱▱▱▱▱",
-            "⏭ **Skipping Track...**\n\n▰▰▰▰▰▱▱▱▱",
-            "⏭ **Skipping Track...**\n\n▰▰▰▰▰▰▱▱▱",
-            "⏭ **Skipping Track...**\n\n▰▰▰▰▰▰▰▱▱",
-            "⏭ **Skipping Track...**\n\n▰▰▰▰▰▰▰▰▱",
-            "⏭ **Skipping Track...**\n\n▰▰▰▰▰▰▰▰▰",
-            "🎶 **Loading Next Song...**"
-        ]
-        
-        for frame in frames:
-            try:
-                await callback_query.message.edit_text(frame)
-                await asyncio.sleep(0.35)
-            except Exception as e:
-                if "FLOOD_WAIT" in str(e):
-                    wait_time = int(str(e).split("_X] - A wait of ")[1].split(" seconds")[0]) if "_X] - A wait of " in str(e) else 5
-                    await asyncio.sleep(wait_time + 1)
-                    await callback_query.message.edit_text(frame)
-                pass
         
         # Get next song from queue BEFORE skipping
         new_q = get_queue(chat_id)
@@ -77,7 +51,8 @@ async def controls(callback_query: types.CallbackQuery):
             
             # Send playing message with thumbnail
             try:
-                msg = await callback_query.bot.send_photo(chat_id, photo=thumb_path, caption=caption, reply_markup=buttons)
+                photo_file = FSInputFile(thumb_path)
+                msg = await callback_query.bot.send_photo(chat_id, photo=photo_file, caption=caption, reply_markup=buttons)
                 # Clean up thumbnail
                 try:
                     os.remove(thumb_path)
@@ -86,7 +61,8 @@ async def controls(callback_query: types.CallbackQuery):
             except Exception as e:
                 if "FLOOD_WAIT" in str(e):
                     await asyncio.sleep(12)
-                    msg = await callback_query.bot.send_photo(chat_id, photo=thumb_path, caption=caption, reply_markup=buttons)
+                    photo_file = FSInputFile(thumb_path)
+                    msg = await callback_query.bot.send_photo(chat_id, photo=photo_file, caption=caption, reply_markup=buttons)
                     try:
                         os.remove(thumb_path)
                     except:
@@ -112,40 +88,32 @@ async def controls(callback_query: types.CallbackQuery):
         text = f"➻ sᴛʀᴇᴀᴍ ᴇɴᴅᴇᴅ/sᴛᴏᴩᴩᴇᴅ 🎄\n│\n└ʙʏ : {user} 🥀"
         keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="✕ Close", callback_data="close")]])
         await callback_query.bot.send_message(chat_id, text, reply_markup=keyboard)
-    elif callback_query.data == "seek_fwd_5" and chat_id and callback_query.message:
-        seek_slider(chat_id, callback_query.message.message_id, 5)
-        await callback_query.answer("↻ +5s")
-        # Force immediate update of slider to show new position
+    elif callback_query.data == "seek_fwd_10" and chat_id and callback_query.message:
+        from core.call import seek
         state_key = f"{chat_id}:{callback_query.message.message_id}"
         state = SLIDERS.get(state_key)
         if state:
-            try:
-                keyboard = build_keyboard(state["current"], state["duration"])
-                await callback_query.bot.edit_message_caption(
-                    chat_id=chat_id,
-                    message_id=callback_query.message.message_id,
-                    caption=state["prefix"],
-                    reply_markup=keyboard
-                )
-            except Exception:
-                pass
-    elif callback_query.data == "seek_back_5" and chat_id and callback_query.message:
-        seek_slider(chat_id, callback_query.message.message_id, -5)
-        await callback_query.answer("↺ -5s")
-        # Force immediate update of slider to show new position
+            new_time = state["current"] + 10
+            if new_time < state["duration"]:
+                await seek(chat_id, new_time)
+                seek_slider(chat_id, callback_query.message.message_id, 10)
+                await callback_query.answer("⏩ +10s")
+            else:
+                await callback_query.answer("⚠️ End of track")
+        else:
+            await callback_query.answer("❌ Error")
+            
+    elif callback_query.data == "seek_back_10" and chat_id and callback_query.message:
+        from core.call import seek
         state_key = f"{chat_id}:{callback_query.message.message_id}"
         state = SLIDERS.get(state_key)
         if state:
-            try:
-                keyboard = build_keyboard(state["current"], state["duration"])
-                await callback_query.bot.edit_message_caption(
-                    chat_id=chat_id,
-                    message_id=callback_query.message.message_id,
-                    caption=state["prefix"],
-                    reply_markup=keyboard
-                )
-            except Exception:
-                pass
+            new_time = max(0, state["current"] - 10)
+            await seek(chat_id, new_time)
+            seek_slider(chat_id, callback_query.message.message_id, -10)
+            await callback_query.answer("⏪ -10s")
+        else:
+            await callback_query.answer("❌ Error")
     elif callback_query.data == "prev":
         await callback_query.answer("⏮ Not implemented")
     elif callback_query.data == "loop":
