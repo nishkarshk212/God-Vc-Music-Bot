@@ -176,29 +176,23 @@ async def quick_play(message: types.Message, query: str, status_message: types.M
         print(f"  → Found: {title}")
         print(f"  → URL: {webpage_url}")
         
-        # Strategy: Download audio only (optimized for voice chat)
-        print(f"  → Attempting audio download...")
-        file_path = await download_song(webpage_url or stream_url or query, quality="best", codec="h264")
+        # ⚡ FAST PLAY OPTIMIZATION: Try direct stream FIRST (instant playback)
+        file_path = None
+        if webpage_url:
+            print(f"  → Attempting direct stream resolution (FAST)...")
+            try:
+                resolved_url = await resolve_stream(webpage_url)
+                if resolved_url:
+                    file_path = resolved_url
+                    print(f"  ✅ Got direct stream URL - INSTANT PLAY!")
+            except Exception as resolve_err:
+                print(f"  ⚠️ Stream resolution failed, downloading...")
         
+        # Fallback to download only if stream fails
         if not file_path:
-            print(f"  → Download failed, trying alternatives...")
-            # If download fails, try resolution as fallback
-            if webpage_url:
-                print(f"  → Trying stream resolution from {webpage_url}...")
-                try:
-                    resolved_url = await resolve_stream(webpage_url)
-                    if resolved_url and resolved_url != webpage_url:
-                        file_path = resolved_url
-                        print(f"  ✅ Got stream via resolution")
-                except Exception as resolve_err:
-                    print(f"❌ Resolution failed: {resolve_err}")
-            
-            # Final fallback: use direct URL from search ONLY if it looks like a direct link
-            if not file_path and stream_url:
-                if any(k in stream_url for k in [".googlevideo.com", ".m3u8", ".mp3", ".mp4", "shrutibots.site"]):
-                    file_path = stream_url
-                    print(f"  → Using direct stream URL from search")
-
+            print(f"  → Downloading audio (slower)...")
+            file_path = await download_song(webpage_url or stream_url or query, quality="best", codec="h264")
+        
         if not file_path:
             error_msg = "Could not get a playable file. This might be due to:\n\n"
             error_msg += "• YouTube blocking the server (IP Ban)\n"
@@ -287,7 +281,7 @@ async def quick_play(message: types.Message, query: str, status_message: types.M
     buttons = build_keyboard(0, duration_value or 0)
     thumb_path = await generate_thumb(title, message.from_user.first_name, thumb)
     duration_str = format_duration(duration_value)
-    header = "#𝟊єєℓ_𝚻нє_𝚸𝐨ω𝐞𝗿_𝐎ƒ_𝚳𝐮sî𝗰"
+    header = "#𝟊єєℓ_𝚻нє_𝚸𝐨ω𝐞𝐫_𝐎𝐟_𝚳𝐮sî𝗰"
     lines = f"✯ 𝐓ɩttɭ𝛆 »   {title}\n✬ 𝐃ʋɽɑʈɩσŋ »  {duration_str}\n✭ 𝐁ɣ »  {message.from_user.first_name}"
     await status.delete()
     
@@ -295,7 +289,7 @@ async def quick_play(message: types.Message, query: str, status_message: types.M
     if was_playing:
         # Song is queued - show queued message
         queue_caption = f"""
-#𝟊єєℓ_𝚻нє_𝚸𝐨ω𝐞𝗿_𝐎ƒ_𝚳𝐮sî𝗰
+#𝟊єєℓ_𝚻нє_𝚸𝐨ω𝐞𝐫_𝐎𝐟_𝚳𝐮sî𝗰
 
 ✯ 𝐓ɩttɭ𝛆 »   {title}
 ✬ 𝐃ʋɽɑʈɩσŋ »  {duration_str}
