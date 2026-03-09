@@ -40,23 +40,21 @@ async def start_playback(chat_id, is_video=False):
             current_playing[chat_id] = next_item
 
             try:
-                # CRITICAL FIX: Unified robust audio parameters for ALL playback scenarios
-                # This ensures consistent sound across audio and video playback
+                # CRITICAL FIX: Use simpler, more compatible approach for Telegram VC
+                # Removing complex ffmpeg filters that may cause silence issues
                 is_url = url.startswith(("http://", "https://"))
                 
-                # Core audio fixes for Telegram VC compatibility:
-                # 1. volume=2.0 - Boosts quiet audio (Telegram VC needs this)
-                # 2. loudnorm - Normalizes audio levels (prevents silent sections)
-                # 3. ac 2 - Forces stereo (required for proper VC playback)
-                # 4. ar 48000 - Standard sample rate for Telegram
-                # 5. pcm_s16le - Uncompressed audio format (most compatible)
-                ffmpeg_args = (
-                    "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10 " if is_url else ""
-                )
-                ffmpeg_args += (
-                    '-af "volume=2.0,loudnorm=I=-16:TP=-1.5:LRA=11,dynaudnorm=g=200" '
-                    '-ac 2 -ar 48000 -acodec pcm_s16le -f s16le'
-                )
+                # Simple but effective audio enhancement:
+                # 1. volume=1.5 - Moderate volume boost (safer than 2.0)
+                # 2. ac 2 - Forces stereo (required for proper VC playback)
+                # 3. ar 48000 - Standard sample rate for Telegram
+                # Keep it simple to avoid codec conflicts
+                if is_url:
+                    # For streaming URLs, use minimal reconnection params
+                    ffmpeg_args = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10 -af 'volume=1.5' -ac 2 -ar 48000"
+                else:
+                    # For local files, let ffmpeg auto-detect best format
+                    ffmpeg_args = "-af 'volume=1.5' -ac 2 -ar 48000"
                 
                 if is_video:
                     # Video specific parameters
@@ -131,15 +129,12 @@ async def change_stream(chat_id, stream_url):
     """Change the stream for a chat (used during skip)"""
     from bot import call_py
     
-    # CRITICAL: Use identical robust parameters as start_playback for consistency
+    # CRITICAL: Use simple, compatible parameters
     is_url = stream_url.startswith(("http://", "https://"))
-    ffmpeg_args = (
-        "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10 " if is_url else ""
-    )
-    ffmpeg_args += (
-        '-af "volume=2.0,loudnorm=I=-16:TP=-1.5:LRA=11,dynaudnorm=g=200" '
-        '-ac 2 -ar 48000 -acodec pcm_s16le -f s16le'
-    )
+    if is_url:
+        ffmpeg_args = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10 -af 'volume=1.5' -ac 2 -ar 48000"
+    else:
+        ffmpeg_args = "-af 'volume=1.5' -ac 2 -ar 48000"
     
     stream = MediaStream(
         stream_url,
@@ -177,8 +172,8 @@ async def seek(chat_id, seconds):
     is_video = item.get("is_video", False)
     
     try:
-        # CRITICAL: Use robust audio parameters for seek operation
-        ffmpeg_args = f'-ss {seconds} -af "volume=2.0,loudnorm=I=-16:TP=-1.5:LRA=11,dynaudnorm=g=200" -ac 2 -ar 48000 -acodec pcm_s16le -f s16le'
+        # CRITICAL: Use simple parameters for seek operation
+        ffmpeg_args = f"-ss {seconds} -af 'volume=1.5' -ac 2 -ar 48000"
         
         if is_video:
             from pytgcalls.types.stream import VideoQuality
@@ -237,15 +232,12 @@ async def change_stream_video(chat_id, stream_url):
     from bot import call_py
     from pytgcalls.types.stream import VideoQuality
     
-    # CRITICAL: Use STUDIO quality and identical audio parameters for consistency
+    # CRITICAL: Use simple, compatible parameters
     is_url = stream_url.startswith(("http://", "https://"))
-    ffmpeg_args = (
-        "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10 " if is_url else ""
-    )
-    ffmpeg_args += (
-        '-af "volume=2.0,loudnorm=I=-16:TP=-1.5:LRA=11,dynaudnorm=g=200" '
-        '-ac 2 -ar 48000 -acodec pcm_s16le -f s16le'
-    )
+    if is_url:
+        ffmpeg_args = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10 -af 'volume=1.5' -ac 2 -ar 48000"
+    else:
+        ffmpeg_args = "-af 'volume=1.5' -ac 2 -ar 48000"
     
     stream = MediaStream(
         stream_url,
